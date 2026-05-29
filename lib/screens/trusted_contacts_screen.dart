@@ -161,12 +161,12 @@ class TrustedContactsScreen extends StatelessWidget {
 
                 const SizedBox(height: 5),
 
-                Text(
-                  relation,
-                  style: const TextStyle(
-                    color: Colors.grey,
-                  ),
-                ),
+Text(
+  relation,
+  style: const TextStyle(
+    color: Colors.black87,
+  ),
+),
 
                 const SizedBox(height: 5),
 

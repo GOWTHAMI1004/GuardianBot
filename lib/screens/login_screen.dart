@@ -1,336 +1,195 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-
-import 'profile_setup_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() =>
-      _LoginScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState
-    extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  
+  bool _isLoading = false;
 
-  final TextEditingController phoneController =
-      TextEditingController();
-
-  final TextEditingController otpController =
-      TextEditingController();
-
-  String verificationId = "";
-
-  bool otpSent = false;
-
-  Future<void> signInWithGoogle() async {
+  /// Handles Google Sign-In and routing logic based on Firestore checks
+  Future<void> _handleGoogleSignIn() async {
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
+      // 1. Trigger the native Google account picker popup
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        // User cancelled the picker interface
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
 
-      final GoogleSignInAccount? googleUser =
-          await GoogleSignIn().signIn();
+      // 2. Obtain authentication details from the request
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
-      if (googleUser == null) return;
-
-      final GoogleSignInAuthentication
-          googleAuth =
-          await googleUser.authentication;
-
-      final credential =
-          GoogleAuthProvider.credential(
-
+      // 3. Create a new credential for Firebase Authentication
+      final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      await FirebaseAuth.instance
-          .signInWithCredential(
-        credential,
-      );
+      // 4. Sign into Firebase using the Google credential
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      final User? user = userCredential.user;
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const ProfileSetupScreen(),
-        ),
-      );
+      if (user != null) {
+        // 5. Query Firestore to check if this user record already exists
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
 
+        if (!mounted) return;
+
+        if (userDoc.exists && userDoc.data() != null) {
+          // User exists -> Route straight past setup to Home Screen via named routes
+          Fluttertoast.showToast(msg: "Welcome back, ${user.displayName}!");
+          Navigator.pushReplacementNamed(context, '/home');
+        } else {
+          // Brand New User -> Route into the Profile Setup pipeline via named routes
+          Fluttertoast.showToast(msg: "Authentication successful! Let's set up your profile.");
+          Navigator.pushReplacementNamed(context, '/profile-setup');
+        }
+      }
     } catch (e) {
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-
-        SnackBar(
-          content: Text(
-            "Google Sign-In Failed: $e",
-          ),
-        ),
+      // Error 1 Fix: Corrected to Toast.LENGTH_LONG
+      Fluttertoast.showToast(
+        msg: "Sign-In Failed: ${e.toString()}",
+        toastLength: Toast.LENGTH_LONG, 
       );
-    }
-  }
-
-  Future<void> sendOTP() async {
-
-    await FirebaseAuth.instance
-        .verifyPhoneNumber(
-
-      phoneNumber:
-          phoneController.text.trim(),
-
-      verificationCompleted:
-          (PhoneAuthCredential credential)
-          async {
-
-        await FirebaseAuth.instance
-            .signInWithCredential(
-          credential,
-        );
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-           builder: (_) => const ProfileSetupScreen(),
-          ),
-        );
-      },
-
-      verificationFailed:
-          (FirebaseAuthException e) {
-
-        ScaffoldMessenger.of(context)
-            .showSnackBar(
-
-          SnackBar(
-            content: Text(
-              e.message ??
-                  "OTP Failed",
-            ),
-          ),
-        );
-      },
-
-      codeSent:
-          (String verId,
-          int? resendToken) {
-
+    } finally {
+      if (mounted) {
         setState(() {
-
-          verificationId = verId;
-
-          otpSent = true;
+          _isLoading = false;
         });
-      },
-
-      codeAutoRetrievalTimeout:
-          (String verId) {
-
-        verificationId = verId;
-      },
-    );
-  }
-
-  Future<void> verifyOTP() async {
-
-    try {
-
-      PhoneAuthCredential credential =
-          PhoneAuthProvider.credential(
-
-        verificationId:
-            verificationId,
-
-        smsCode:
-            otpController.text.trim(),
-      );
-
-      await FirebaseAuth.instance
-          .signInWithCredential(
-        credential,
-      );
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const ProfileSetupScreen(),
-        ),
-      );
-
-    } catch (e) {
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-
-        const SnackBar(
-          content: Text(
-            "Invalid OTP",
-          ),
-        ),
-      );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Premium theme colors matching your safety application profile
+    const Color primaryDeepPurple = Color(0xFF4A154B);
 
     return Scaffold(
-
       backgroundColor: Colors.white,
-
       body: SafeArea(
-
-        child: Padding(
-
-          padding:
-              const EdgeInsets.symmetric(
-            horizontal: 25,
-          ),
-
+        child: Center(
           child: SingleChildScrollView(
-
+            padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
             child: Column(
-
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-
-                const SizedBox(
-                    height: 60),
-
-                Image.asset(
-                  'assets/images/logo.jpeg',
-                  height: 90,
+                // Modern Branding Icon Container
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: primaryDeepPurple.withOpacity(0.06),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.security_rounded,
+                    size: 80,
+                    color: primaryDeepPurple,
+                  ),
                 ),
+                const SizedBox(height: 24),
 
-                const SizedBox(
-                    height: 15),
-
-                const Text(
-
+                // App Branding Title
+                Text(
                   "GuardianBot",
-
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight:
-                        FontWeight.bold,
-                    color:
-                        Color(0xFFE91E63),
+                  style: GoogleFonts.poppins(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: primaryDeepPurple,
+                    letterSpacing: 0.5,
                   ),
                 ),
+                const SizedBox(height: 8),
 
-                const SizedBox(
-                    height: 8),
-
-                const Text(
-
+                // Subtitle Message
+                Text(
                   "Welcome Back",
-
-                  style: TextStyle(
+                  style: GoogleFonts.inter(
                     fontSize: 16,
-                    color: Colors.grey,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
+                const SizedBox(height: 64),
 
-                const SizedBox(
-                    height: 40),
-
-                
-                SizedBox(
-
-                  width:
-                      double.infinity,
-
-                  height: 55,
-
-                  child: ElevatedButton(
-
-                    style:
-                        ElevatedButton
-                            .styleFrom(
-
-                      backgroundColor:
-                          const Color(
-                              0xFFE91E63),
-
-                      shape:
-                          RoundedRectangleBorder(
-
-                        borderRadius:
-                            BorderRadius
-                                .circular(
-                                    30),
+                // Professional Action Block (Only Google Button Remains)
+                _isLoading
+                    ? const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(primaryDeepPurple),
+                      )
+                    : SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: OutlinedButton(
+                          onPressed: _handleGoogleSignIn,
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: Colors.grey[300]!, width: 1.5),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            backgroundColor: Colors.white,
+                            elevation: 0,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              // Error 3 Fix: Swapped network image for reliable offline icon
+                              const Icon(
+                                Icons.g_mobiledata,
+                                color: Colors.red,
+                                size: 34,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                "Continue with Google",
+                                style: GoogleFonts.inter(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-
-onPressed: () {
-
-  showModalBottomSheet(
-
-    context: context,
-
-    isScrollControlled: true,
-
-    builder: (context) {
-
-      return Padding(
-
-        padding: EdgeInsets.only(
-
-          left: 20,
-          right: 20,
-          top: 20,
-
-          bottom: MediaQuery.of(context)
-              .viewInsets
-              .bottom +
-              20,
-        ),
-
-        child: Column(
-
-          mainAxisSize: MainAxisSize.min,
-
-          children: [
-
-            TextField(
-
-              controller: phoneController,
-
-              keyboardType: TextInputType.phone,
-
-              decoration: const InputDecoration(
-
-                labelText: "Enter Mobile Number",
-
-                hintText: "+919876543210",
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            SizedBox(
-
-              width: double.infinity,
-
-              child: ElevatedButton(
-
-                onPressed: () {
-
-                  Navigator.pop(context);
-
-                  sendOTP();
-                },
-
-                child: const Text(
-                  "Send OTP",
+                const SizedBox(height: 40),
+                
+                // Fine-print system indicator
+                Text(
+                  "Your data is completely encrypted and secured",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.grey[400],
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
-              ),
+              ],
             ),
-
-            const SizedBox(height: 10),
-          ],
+          ),
         ),
-      );
-    },
-  );
-},
-
+      ),
+    );
+  }
+}
