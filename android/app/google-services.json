@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "407492703433",
+    "project_id": "safeguardher-app-5ee49",
+    "storage_bucket": "safeguardher-app-5ee49.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:407492703433:android:01b9dc444f5b82ceab0918",
+        "android_client_info": {
+          "package_name": "com.example.safeguardher_women_safety_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "407492703433-d9kdv8s0p8h6u5nqq4ud33mc8hahep30.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.safeguardher_women_safety_app",
+            "certificate_hash": "89188c3f1baae7cb28d61a32733f635ab6c47094"
+          }
+        },
+        {
+          "client_id": "407492703433-1ico0irc64c18kqunt5ekklq2nmjq55g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCjoqEUgh9y3sS65xG2pe5pf0OELrlD5ms"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "407492703433-1ico0irc64c18kqunt5ekklq2nmjq55g.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
