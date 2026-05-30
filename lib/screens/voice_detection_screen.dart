@@ -1,9 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -28,7 +29,7 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
     startListening();
   }
 
-  // AUTO CALL TRUSTED CONTACT
+  // FIXED BUG 1: Accessing the first contact element from the list safely
   Future<void> autoCallTrustedContact() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -50,12 +51,53 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
     await FlutterPhoneDirectCaller.callNumber(phone);
   }
 
-  // EMERGENCY ALERT FUNCTION (WHATSAPP)
+  // Fast2SMS Send Function with Response Tracking Loggers
+  Future<void> sendSMS(
+    String phone,
+    String message,
+  ) async {
+    // ⚠️ Remember to paste your REGENERATED Fast2SMS key here
+    const String apiKey = "j2ZnO0eWSClGYc8T8xkbRArpy61KZDSCIRq4kXGYRGJOoEfbqD7mzpbOuUGR";
+
+    try {
+      print("SENDING SMS TO: $phone");
+      final response = await http.post(
+        Uri.parse("https://www.fast2sms.com/dev/bulkV2"),
+        headers: {
+          "authorization": apiKey,
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "route": "q",
+          "message": message,
+          "language": "english",
+          "numbers": phone,
+        }),
+      );
+
+      print("FAST2SMS STATUS: ${response.statusCode}");
+      print("FAST2SMS BODY: ${response.body}");
+
+    } catch (e) {
+      print("FAST2SMS HTTP ERROR: $e");
+      Fluttertoast.showToast(msg: "Failed to send SMS via API");
+    }
+  }
+
   Future<void> sendEmergencyAlert() async {
-    // ADDED: Toast at the very beginning of the function
-    Fluttertoast.showToast(
-      msg: "Getting Location...",
-    );
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    DocumentSnapshot doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    final data = doc.data() as Map<String, dynamic>?;
+    if (data == null) return;
+
+    List<dynamic> contacts = data['emergencyContacts'] ?? [];
+    if (contacts.isEmpty) return;
 
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) return;
@@ -69,27 +111,28 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
       desiredAccuracy: LocationAccuracy.high,
     );
 
-    String locationLink = "https://maps.google.com/?q="
-        "${position.latitude},${position.longitude}";
+    String locationLink =
+        "https://maps.google.com/?q=${position.latitude},${position.longitude}";
 
-    String message = "🚨 EMERGENCY ALERT 🚨\n\n"
-        "Danger keyword detected.\n"
+    String message =
+        "🚨 EMERGENCY ALERT 🚨\n\n"
         "I need help.\n\n"
-        "Live Location:\n"
-        "$locationLink";
+        "Live Location:\n$locationLink";
 
-    final Uri whatsapp = Uri.parse(
-      "https://wa.me/?text=${Uri.encodeComponent(message)}",
-    );
+    // FIXED BUG 2: Correctly reading target map values element-by-element inside the iteration
+    for (var contact in contacts) {
+      String phone = contact['phone'] ?? "";
 
-    // ADDED: Toast displaying the location link before launching the URL
+      if (phone.isNotEmpty) {
+        await sendSMS(
+          phone,
+          message,
+        );
+      }
+    }
+
     Fluttertoast.showToast(
-      msg: locationLink,
-    );
-
-    await launchUrl(
-      whatsapp,
-      mode: LaunchMode.externalApplication,
+      msg: "Emergency SMS Sent",
     );
   }
 

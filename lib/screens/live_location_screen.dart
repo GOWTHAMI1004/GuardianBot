@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'contact_selection_screen.dart';
+import 'trusted_contacts_screen.dart';
+import 'profile_screen.dart';
 
 class LiveLocationScreen extends StatefulWidget {
 
@@ -366,8 +368,63 @@ class _LiveLocationScreenState
               ],
             ),
           ),
-
           const SizedBox(height: 20),
+        ],
+      ),
+
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: const Color(0xFF161B33),
+        type: BottomNavigationBarType.fixed,
+        currentIndex: 1, // Location selected
+        selectedItemColor: Colors.pink,
+        unselectedItemColor: Colors.grey,
+
+        onTap: (index) {
+
+          if (index == 0) {
+            Navigator.pop(context);
+          }
+
+          if (index == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const TrustedContactsScreen(),
+              ),
+            );
+          }
+
+          if (index == 3) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const ProfileScreen(),
+              ),
+            );
+          }
+        },
+
+        items: const [
+
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: "Home",
+          ),
+
+          BottomNavigationBarItem(
+            icon: Icon(Icons.location_on),
+            label: "Location",
+          ),
+
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people),
+            label: "Contacts",
+          ),
+
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: "Profile",
+          ),
         ],
       ),
     );

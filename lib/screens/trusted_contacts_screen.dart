@@ -3,6 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'home_screen.dart';
+import 'live_location_screen.dart';
+import 'profile_screen.dart';
 
 class TrustedContactsScreen extends StatelessWidget {
   const TrustedContactsScreen({super.key});
@@ -251,6 +254,63 @@ final contactMap = {
                 );
               },
             ),
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: const Color(0xFF161B33),
+        type: BottomNavigationBarType.fixed,
+        currentIndex: 2,
+
+        selectedItemColor: Colors.pink,
+        unselectedItemColor: Colors.grey,
+
+        onTap: (index) {
+
+          if (index == 0) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const HomeScreen(),
+              ),
+            );
+          }
+
+          if (index == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => LiveLocationScreen(),
+              ),
+            );
+          }
+
+          if (index == 3) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const ProfileScreen(),
+              ),
+            );
+          }
+        },
+
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: "Home",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.location_on),
+            label: "Location",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people),
+            label: "Contacts",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: "Profile",
+          ),
+        ],
+      ),
     );
   }
 

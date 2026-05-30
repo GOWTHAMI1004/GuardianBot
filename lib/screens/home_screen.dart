@@ -22,60 +22,44 @@ class HomeScreen extends StatelessWidget {
     required String subtitle,
     VoidCallback? onTap,
   }) {
-
     return GestureDetector(
-
       onTap: onTap,
-
       child: Container(
-
         padding: const EdgeInsets.all(15),
-
         decoration: BoxDecoration(
-
-          color: Colors.white,
-
+          color: const Color(0xFF1A2140),
           borderRadius: BorderRadius.circular(25),
-
-          boxShadow: [
-
-            BoxShadow(
-
-              color: Colors.grey.shade200,
-
-              blurRadius: 10,
-            ),
-          ],
+          border: Border.all(color: Colors.white10),
         ),
-
         child: Column(
-
           mainAxisAlignment: MainAxisAlignment.center,
-
           children: [
 
-            CircleAvatar(
-
-              radius: 28,
-
-              backgroundColor:
-              color.withOpacity(0.15),
-
+            Container(
+              height: 65,
+              width: 65,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withOpacity(0.4),
+                    blurRadius: 15,
+                  ),
+                ],
+              ),
               child: Icon(
                 icon,
-                color: color,
-                size: 30,
+                color: Colors.white,
+                size: 32,
               ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
 
             Text(
-
               title,
-
               textAlign: TextAlign.center,
-
               style: TextStyle(
                 color: color,
                 fontWeight: FontWeight.bold,
@@ -86,19 +70,13 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 8),
 
             Flexible(
-
               child: Text(
-
                 subtitle,
-
                 textAlign: TextAlign.center,
-
                 maxLines: 3,
-
                 overflow: TextOverflow.ellipsis,
-
                 style: const TextStyle(
-                  color: Colors.black54,
+                  color: Colors.white70,
                   fontSize: 12,
                   height: 1.3,
                 ),
@@ -117,47 +95,37 @@ class HomeScreen extends StatelessWidget {
     required String title,
     VoidCallback? onTap,
   }) {
-
     return GestureDetector(
-
       onTap: onTap,
-
       child: Container(
-
         width: 90,
-
         padding: const EdgeInsets.all(10),
-
         decoration: BoxDecoration(
-
           color: Colors.white,
-
           borderRadius: BorderRadius.circular(18),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 8,
+            ),
+          ],
         ),
-
         child: Column(
-
           mainAxisSize: MainAxisSize.min,
-
           children: [
-
             Image.asset(
               image,
               height: 40,
               fit: BoxFit.contain,
             ),
-
             const SizedBox(height: 8),
-
             Text(
-
               title,
-
               textAlign: TextAlign.center,
-
               style: const TextStyle(
+                color: Colors.black87,
                 fontSize: 13,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -184,24 +152,44 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
 
     return Scaffold(
-
-      backgroundColor: const Color(0xfff7f7f7),
+      backgroundColor: const Color(0xFF0B1023),
 
       appBar: AppBar(
+        backgroundColor: const Color(0xFF0B1023),
+        elevation: 4,
+        shadowColor: Colors.black54,
 
-        backgroundColor: const Color(0xffE91E63),
-
-        elevation: 0,
-
-        title: const Text(
-
-          "GuardianBot",
-
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
+        title: RichText(
+          text: const TextSpan(
+            children: [
+              TextSpan(
+                text: "Guardian",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              TextSpan(
+                text: "Bot",
+                style: TextStyle(
+                  color: Color(0xFFFF4D8D),
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
         ),
+        actions: [
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(
+              Icons.notifications_none,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
 
       body: SingleChildScrollView(
@@ -222,28 +210,34 @@ class HomeScreen extends StatelessWidget {
               padding: const EdgeInsets.all(18),
 
               decoration: BoxDecoration(
-
-                color: Colors.white,
-
-                borderRadius:
-                BorderRadius.circular(25),
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF1E2545),
+                    Color(0xFF2B3568),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(25),
               ),
-
               child: Row(
 
                 children: [
 
-                  CircleAvatar(
-
-                    radius: 30,
-
-                    backgroundColor:
-                    Colors.pink.withOpacity(0.1),
-
+                  Container(
+                    height: 60,
+                    width: 60,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFFFF4D8D),
+                          Color(0xFFFF7EB3),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
                     child: const Icon(
-                      Icons.shield,
-                      color: Colors.pink,
-                      size: 35,
+                      Icons.verified_user,
+                      color: Colors.white,
+                      size: 30,
                     ),
                   ),
 
@@ -263,9 +257,10 @@ class HomeScreen extends StatelessWidget {
                           "Guardian is Active",
 
                           style: TextStyle(
+                            color: Color(0xFFFF7EB3),
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Colors.pink,
+
                           ),
                         ),
 
@@ -274,7 +269,7 @@ class HomeScreen extends StatelessWidget {
                         Text(
                           "AI is monitoring your safety 24x7",
                           style: TextStyle(
-                            color: Colors.black54,
+                              color: Colors.white70,
                           ),
                         ),
                       ],
@@ -292,12 +287,12 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 25),
 
             const Text(
-
               "How can we help you?",
-
               style: TextStyle(
+                color: Colors.white,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
               ),
             ),
 
@@ -438,6 +433,7 @@ class HomeScreen extends StatelessWidget {
 
               style: TextStyle(
                 fontSize: 22,
+                color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -449,12 +445,13 @@ class HomeScreen extends StatelessWidget {
               padding: const EdgeInsets.all(15),
 
               decoration: BoxDecoration(
+                color: const Color(0xFF161B33),
 
-                color:
-                Colors.pink.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(25),
 
-                borderRadius:
-                BorderRadius.circular(25),
+                border: Border.all(
+                  color: Colors.white10,
+                ),
               ),
 
               child: Row(
@@ -470,6 +467,7 @@ class HomeScreen extends StatelessWidget {
                     "assets/images/uber.jpeg",
 
                     title: "Uber",
+
 
                     onTap: () {
                       openUrl("https://m.uber.com/");
@@ -510,6 +508,7 @@ class HomeScreen extends StatelessWidget {
               "Explore LiveSafe",
 
               style: TextStyle(
+                color: Colors.white,
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
               ),
@@ -523,11 +522,13 @@ class HomeScreen extends StatelessWidget {
 
               decoration: BoxDecoration(
 
-                color:
-                Colors.pink.withOpacity(0.05),
+                color: const Color(0xFF161B33),
 
-                borderRadius:
-                BorderRadius.circular(25),
+                borderRadius: BorderRadius.circular(25),
+
+                border: Border.all(
+                  color: Colors.white10,
+                ),
               ),
 
               child: Row(
@@ -593,11 +594,13 @@ class HomeScreen extends StatelessWidget {
 
               decoration: BoxDecoration(
 
-                color:
-                Colors.pink.withOpacity(0.08),
+                color: const Color(0xFF161B33),
 
-                borderRadius:
-                BorderRadius.circular(25),
+                borderRadius: BorderRadius.circular(25),
+
+                border: Border.all(
+                  color: Colors.white10,
+                ),
               ),
 
               child: Row(
@@ -629,7 +632,7 @@ class HomeScreen extends StatelessWidget {
                             fontWeight:
                             FontWeight.bold,
 
-                            color: Colors.pink,
+                            color: Color(0xFFFF7EB3),
 
                             fontSize: 18,
                           ),
@@ -638,7 +641,12 @@ class HomeScreen extends StatelessWidget {
                         SizedBox(height: 10),
 
                         Text(
-                          "We'll alert trusted contacts if danger is detected.",
+                          "We'll alert trusted contacts instantly if danger is detected.",
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                            height: 1.4,
+                          ),
                         ),
                       ],
                     ),
@@ -652,60 +660,39 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
 
-      bottomNavigationBar:
-      BottomNavigationBar(
-
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: const Color(0xFF161B33),
+        type: BottomNavigationBarType.fixed,
+        elevation: 0,
         currentIndex: 0,
-
-        selectedItemColor:
-        Colors.pink,
-
-        unselectedItemColor:
-        Colors.grey,
+        selectedItemColor: Colors.pink,
+        unselectedItemColor: Colors.grey,
 
         onTap: (index) {
 
-          // LIVE LOCATION
-
           if (index == 1) {
-
             Navigator.push(
-
               context,
-
               MaterialPageRoute(
-                builder: (_) =>
-                LiveLocationScreen(),
+                builder: (_) => LiveLocationScreen(),
               ),
             );
           }
-
-          // CONTACTS
 
           if (index == 2) {
-
             Navigator.push(
-
               context,
-
               MaterialPageRoute(
-                builder: (_) =>
-                const TrustedContactsScreen(),
+                builder: (_) => const TrustedContactsScreen(),
               ),
             );
           }
 
-          // PROFILE
-
           if (index == 3) {
-
             Navigator.push(
-
               context,
-
               MaterialPageRoute(
-                builder: (_) =>
-                const ProfileScreen(),
+                builder: (_) => const ProfileScreen(),
               ),
             );
           }
@@ -737,4 +724,3 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
-
