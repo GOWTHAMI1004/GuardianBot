@@ -74,94 +74,95 @@ class _LiveLocationScreenState
     required Color color,
     required VoidCallback onTap,
   }) {
-
-    return Expanded(
-      child: GestureDetector(
-
-        onTap: onTap,
-
-        child: Container(
-          margin:
-              const EdgeInsets.symmetric(horizontal: 5),
-
-          padding: const EdgeInsets.all(15),
-
-          decoration: BoxDecoration(
-            color: Colors.white,
-
-            borderRadius:
-                BorderRadius.circular(25),
-
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.shade200,
-                blurRadius: 10,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.symmetric(horizontal: 5),
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1B1E4B),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 28,
+              backgroundColor: color.withOpacity(0.15),
+              child: Icon(
+                icon,
+                color: color,
+                size: 30,
               ),
-            ],
-          ),
+            ),
 
-          child: Column(
-            children: [
+            const SizedBox(width: 15),
 
-              CircleAvatar(
-                radius: 28,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
 
-                backgroundColor:
-                    color.withOpacity(0.15),
+                  const SizedBox(height: 4),
 
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 30,
-                ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
               ),
+            ),
 
-              const SizedBox(height: 12),
-
-              Text(
-                title,
-
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              Text(
-                subtitle,
-
-                textAlign: TextAlign.center,
-
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.black54,
-                ),
-              ),
-            ],
-          ),
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.white70,
+              size: 18,
+            ),
+          ],
         ),
       ),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
 
     return Scaffold(
 
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFF050B2C),
 
       appBar: AppBar(
-        backgroundColor: const Color(0xffE91E63),
+        backgroundColor: const Color(0xFF050B2C),
+        elevation: 0,
+
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.white,
+          ),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
 
         title: const Text(
           "Live Location",
-
           style: TextStyle(
             color: Colors.white,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),
@@ -175,17 +176,12 @@ class _LiveLocationScreenState
             padding: const EdgeInsets.all(15),
 
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: const Color(0xFF1B1E4B),
 
               borderRadius:
                   BorderRadius.circular(25),
 
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.shade200,
-                  blurRadius: 10,
-                ),
-              ],
+
             ),
 
             child: Row(
@@ -210,23 +206,22 @@ class _LiveLocationScreenState
 
                       const Text(
                         "GuardianBot",
-
                         style: TextStyle(
-                          fontWeight:
-                              FontWeight.bold,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
                           fontSize: 18,
                         ),
                       ),
-
                       const SizedBox(height: 5),
 
                       Text(
                         currentLocation,
 
                         style: const TextStyle(
-                          color: Colors.black54,
+                          color: Colors.white70,
                           fontSize: 13,
                         ),
+
                       ),
                     ],
                   ),
@@ -310,62 +305,23 @@ class _LiveLocationScreenState
           const SizedBox(height: 15),
 
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10),
-
-            child: Row(
-              children: [
-
-                actionButton(
-                  icon: Icons.location_on,
-
-                  title: "Track Me",
-
-                  subtitle:
-                      "Track my live location",
-
-                  color: Colors.pink,
-
-                  onTap: () {
-
-                    Navigator.push(
-                      context,
-
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            ContactSelectionScreen(),
-                      ),
-                    );
-                  },
-                ),
-
-                actionButton(
-                  icon:
-                      Icons.notifications_active,
-
-                  title: "Panic",
-
-                  subtitle:
-                      "Emergency alert",
-
-                  color: Colors.red,
-
-                  onTap: () {},
-                ),
-
-                actionButton(
-                  icon: Icons.mic,
-
-                  title: "Record",
-
-                  subtitle:
-                      "Record audio",
-
-                  color: Colors.deepPurple,
-
-                  onTap: () {},
-                ),
-              ],
+            padding: const EdgeInsets.symmetric(
+              horizontal: 15,
+            ),
+            child: actionButton(
+              icon: Icons.location_on,
+              title: "Track Me",
+              subtitle: "Track my live location",
+              color: Colors.pink,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        ContactSelectionScreen(),
+                  ),
+                );
+              },
             ),
           ),
           const SizedBox(height: 20),

@@ -5,6 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'login_screen.dart';
 import 'edit_profile_screen.dart';
 import 'trusted_contacts_screen.dart';
+import 'recordings_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -15,10 +16,17 @@ class ProfileScreen extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FC),
+      backgroundColor: const Color(0xFF050B2C),
       appBar: AppBar(
-        backgroundColor: primaryPink,
+        backgroundColor: const Color(0xFF050B2C),
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.white,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
           "My Profile",
@@ -77,9 +85,9 @@ class ProfileScreen extends StatelessWidget {
                             Text(
                               displayFullName,
                               style: const TextStyle(
-                                fontSize: 22,
+                                fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black87,
+                                color: Colors.white,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -87,7 +95,7 @@ class ProfileScreen extends StatelessWidget {
                               displayEmail,
                               style: const TextStyle(
                                 fontSize: 14,
-                                color: Colors.grey,
+                                color: Colors.white70,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -101,7 +109,7 @@ class ProfileScreen extends StatelessWidget {
                                   style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
-                                    color: Colors.black54,
+                                    color: Colors.white70,
                                   ),
                                 ),
                               ],
@@ -110,7 +118,7 @@ class ProfileScreen extends StatelessWidget {
                             const Text(
                               "GuardianBot User",
                               style: TextStyle(
-                                color: Colors.black87,
+                                color: Colors.white,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -151,12 +159,13 @@ class ProfileScreen extends StatelessWidget {
                         margin: const EdgeInsets.symmetric(horizontal: 20),
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: const Color(0xFF1B1E4B),
                           borderRadius: BorderRadius.circular(25),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.grey.shade200,
-                              blurRadius: 10,
+                              color: Colors.black.withOpacity(0.25),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
@@ -168,11 +177,15 @@ class ProfileScreen extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: primaryPink,
+                                color: Colors.white,
                               ),
                             ),
-                            const Divider(height: 20, thickness: 1),
-                            
+                            const Divider(
+                              height: 20,
+                              thickness: 1,
+                              color: Colors.white24,
+                            ),
+
                             // High-level Boolean statuses only. No raw list tracking details leaked here!
                             buildStatusRow("Profile Completed", profileCompleted),
                             buildStatusRow("Trusted Contacts Added", contactsConfigured),
@@ -184,7 +197,10 @@ class ProfileScreen extends StatelessWidget {
                               children: [
                                 const Text(
                                   "Protection Level:",
-                                  style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black54),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white70,
+                                  ),
                                 ),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -220,6 +236,19 @@ class ProfileScreen extends StatelessWidget {
                             context,
                             MaterialPageRoute(
                               builder: (context) => const TrustedContactsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+
+                      buildTile(
+                        icon: Icons.mic,
+                        title: "My Recordings",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const RecordingsScreen(),
                             ),
                           );
                         },
@@ -293,7 +322,7 @@ class ProfileScreen extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: isComplete ? Colors.black87 : Colors.black45,
+              color: Colors.white,
             ),
           ),
         ],
@@ -315,16 +344,10 @@ class ProfileScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(25),
         child: Container(
           padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(25),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.shade200,
-                blurRadius: 10,
-              ),
-            ],
-          ),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1B1E4B),
+              borderRadius: BorderRadius.circular(25),
+            ),
           child: Row(
             children: [
               CircleAvatar(
@@ -335,7 +358,11 @@ class ProfileScreen extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
               ),
               const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
