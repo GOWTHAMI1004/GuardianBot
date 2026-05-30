@@ -44,7 +44,6 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
     List<dynamic> contacts = data['emergencyContacts'] ?? [];
     if (contacts.isEmpty) return;
 
-    // FIXED: Safely accessing the first element from the contacts list
     String phone = contacts[0]['phone'] ?? "";
     if (phone.isEmpty) return;
 
@@ -53,6 +52,11 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
 
   // EMERGENCY ALERT FUNCTION (WHATSAPP)
   Future<void> sendEmergencyAlert() async {
+    // ADDED: Toast at the very beginning of the function
+    Fluttertoast.showToast(
+      msg: "Getting Location...",
+    );
+
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) return;
 
@@ -76,6 +80,11 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
 
     final Uri whatsapp = Uri.parse(
       "https://wa.me/?text=${Uri.encodeComponent(message)}",
+    );
+
+    // ADDED: Toast displaying the location link before launching the URL
+    Fluttertoast.showToast(
+      msg: locationLink,
     );
 
     await launchUrl(
@@ -125,7 +134,6 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
 
     for (String word in dangerWords) {
       if (text.toLowerCase().contains(word)) {
-        // FIXED: Only trigger calling and WhatsApp alerting methods
         autoCallTrustedContact();
         sendEmergencyAlert();
 
