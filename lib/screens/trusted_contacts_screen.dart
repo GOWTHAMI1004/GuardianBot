@@ -10,7 +10,6 @@ import 'profile_screen.dart';
 class TrustedContactsScreen extends StatelessWidget {
   const TrustedContactsScreen({super.key});
 
-  // Action launcher execution loop handles direct device native cellular handoffs
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
     if (await canLaunchUrl(launchUri)) {
@@ -20,7 +19,6 @@ class TrustedContactsScreen extends StatelessWidget {
     }
   }
 
-  // Unified Dialog for Adding and Editing Contacts
   void _showContactDialog({
     required BuildContext context,
     required User user,
@@ -31,6 +29,7 @@ class TrustedContactsScreen extends StatelessWidget {
     final isEditing = existingContact != null;
     final nameController = TextEditingController(text: isEditing ? existingContact['name'] : '');
     final phoneController = TextEditingController(text: isEditing ? existingContact['phone'] : '');
+    final emailController = TextEditingController(text: isEditing ? existingContact['email'] : ''); // Added email input controller
     final relationController = TextEditingController(text: isEditing ? existingContact['relation'] : '');
 
     showDialog(
@@ -52,6 +51,12 @@ class TrustedContactsScreen extends StatelessWidget {
                   keyboardType: TextInputType.phone,
                   decoration: const InputDecoration(labelText: "Phone", hintText: "+1234567890"),
                 ),
+                // Added Email Field to operational pop-up dialog
+                TextField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(labelText: "Email Address", hintText: "mother@gmail.com"),
+                ),
                 TextField(
                   controller: relationController,
                   decoration: const InputDecoration(labelText: "Relation", hintText: "Spouse, Friend, etc."),
@@ -72,41 +77,42 @@ class TrustedContactsScreen extends StatelessWidget {
               onPressed: () async {
                 final String name = nameController.text.trim();
                 final String phone = phoneController.text.trim();
+                final String email = emailController.text.trim(); // Saved field extraction variable
                 final String relation = relationController.text.trim();
-if (name.isEmpty || phone.isEmpty) {
-  Fluttertoast.showToast(
-    msg: "Name and Phone cannot be empty.",
-  );
-  return;
-}
+                
+                if (name.isEmpty || phone.isEmpty || email.isEmpty) {
+                  Fluttertoast.showToast(
+                    msg: "Name, Phone, and Email cannot be empty.",
+                  );
+                  return;
+                }
 
-if (!RegExp(r'^[0-9]{10}$').hasMatch(phone)) {
-  Fluttertoast.showToast(
-    msg: "Enter valid 10 digit phone number",
-  );
-  return;
-}
+                if (!RegExp(r'^[0-9]{10}$').hasMatch(phone)) {
+                  Fluttertoast.showToast(
+                    msg: "Enter valid 10 digit phone number",
+                  );
+                  return;
+                }
 
-final contactMap = {
-  'name': name,
-  'phone': phone,
-  'relation': relation.isEmpty ? 'Friend' : relation,
-};
+                // Fixed Map Structure: Added email attribute configuration mapping
+                final contactMap = {
+                  'name': name,
+                  'phone': phone,
+                  'email': email,
+                  'relation': relation.isEmpty ? 'Friend' : relation,
+                };
 
                 final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
 
                 if (isEditing && index != null && fullContactList != null) {
-                  // Mutate copied list for item replacement update
                   List<dynamic> updatedContacts = List.from(fullContactList);
                   updatedContacts[index] = contactMap;
                   await userDocRef.update({'emergencyContacts': updatedContacts});
                   Fluttertoast.showToast(msg: "Contact Updated");
                 } else {
-                  // Use arrayUnion for robust, atomized insertion strings
                   await userDocRef.update({
                     'emergencyContacts': FieldValue.arrayUnion([contactMap])
                   }).catchError((error) async {
-                    // Fallback to set with merge if document doesn't exist yet
                     await userDocRef.set({
                       'emergencyContacts': [contactMap]
                     }, SetOptions(merge: true));
@@ -161,7 +167,6 @@ final contactMap = {
                 }
 
                 if (!snapshot.hasData || !snapshot.data!.exists) {
-                  // Auto-handle missing backend records gracefully by showing empty view state
                   return _buildEmptyState(context, user);
                 }
 
@@ -182,6 +187,7 @@ final contactMap = {
                           final contact = rawContacts[index] as Map<String, dynamic>;
                           final String name = contact['name'] ?? 'Named Guardian';
                           final String phone = contact['phone'] ?? '';
+                          final String email = contact['email'] ?? 'No Email Added'; // Read Email Field safely
                           final String relation = contact['relation'] ?? 'Friend';
                           
                           final Color assignedThemeColor = avatarColors[index % avatarColors.length];
@@ -189,6 +195,7 @@ final contactMap = {
                           return buildContactCard(
                             name: name,
                             phone: phone,
+                            email: email, // Passed down variable into visualization widget element card
                             relation: relation,
                             color: assignedThemeColor,
                             onEdit: () => _showContactDialog(
@@ -213,8 +220,6 @@ final contactMap = {
                         },
                       ),
                     ),
-                    
-                    // Floating Bottom Dashboard Operations Hub Panel
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -258,57 +263,24 @@ final contactMap = {
         backgroundColor: const Color(0xFF161B33),
         type: BottomNavigationBarType.fixed,
         currentIndex: 2,
-
         selectedItemColor: Colors.pink,
         unselectedItemColor: Colors.grey,
-
         onTap: (index) {
-
           if (index == 0) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const HomeScreen(),
-              ),
-            );
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
           }
-
           if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => LiveLocationScreen(),
-              ),
-            );
+            Navigator.push(context, MaterialPageRoute(builder: (_) => LiveLocationScreen()));
           }
-
           if (index == 3) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const ProfileScreen(),
-              ),
-            );
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
           }
         },
-
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: "Home",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.location_on),
-            label: "Location",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: "Contacts",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: "Profile",
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+          BottomNavigationBarItem(icon: Icon(Icons.location_on), label: "Location"),
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: "Contacts"),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
         ],
       ),
     );
@@ -340,6 +312,7 @@ final contactMap = {
   Widget buildContactCard({
     required String name,
     required String phone,
+    required String email, // Integrated variable
     required String relation,
     required Color color,
     required VoidCallback onEdit,
@@ -351,12 +324,7 @@ final contactMap = {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(25),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 10,
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 10)],
       ),
       child: Row(
         children: [
@@ -370,20 +338,13 @@ final contactMap = {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  name,
-                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-                ),
+                Text(name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 3),
-                Text(
-                  relation,
-                  style: const TextStyle(color: Colors.grey, fontSize: 13),
-                ),
+                Text(relation, style: const TextStyle(color: Colors.grey, fontSize: 13)),
                 const SizedBox(height: 3),
-                Text(
-                  phone,
-                  style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.black87),
-                ),
+                Text(phone, style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.black87)),
+                const SizedBox(height: 3),
+                Text(email, style: const TextStyle(fontSize: 12, color: Colors.blueGrey)), // Visualized email UI addition
               ],
             ),
           ),

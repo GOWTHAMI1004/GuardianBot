@@ -4,18 +4,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
-class EmergencyContactsSetupScreen
-    extends StatefulWidget {
-
+class EmergencyContactsSetupScreen extends StatefulWidget {
   const EmergencyContactsSetupScreen({
     super.key,
   });
 
   @override
-  State<EmergencyContactsSetupScreen>
-      createState() =>
-          _EmergencyContactsSetupScreenState();
+  State<EmergencyContactsSetupScreen> createState() =>
+      _EmergencyContactsSetupScreenState();
 }
+
 class _EmergencyContactsSetupScreenState extends State<EmergencyContactsSetupScreen> {
   final List<Map<String, TextEditingController>> contacts = [];
   bool _isLoading = false;
@@ -30,6 +28,7 @@ class _EmergencyContactsSetupScreenState extends State<EmergencyContactsSetupScr
         "name": TextEditingController(),
         "phone": TextEditingController(),
         "relation": TextEditingController(),
+        "email": TextEditingController(), // Added email controller
       });
     });
   }
@@ -40,6 +39,7 @@ class _EmergencyContactsSetupScreenState extends State<EmergencyContactsSetupScr
         contacts[index]["name"]?.dispose();
         contacts[index]["phone"]?.dispose();
         contacts[index]["relation"]?.dispose();
+        contacts[index]["email"]?.dispose(); // Disposed email controller
         contacts.removeAt(index);
       });
     } else {
@@ -59,6 +59,7 @@ class _EmergencyContactsSetupScreenState extends State<EmergencyContactsSetupScr
       contact["name"]?.dispose();
       contact["phone"]?.dispose();
       contact["relation"]?.dispose();
+      contact["email"]?.dispose(); // Disposed email controller
     }
     super.dispose();
   }
@@ -130,6 +131,16 @@ class _EmergencyContactsSetupScreenState extends State<EmergencyContactsSetupScr
                             ),
                           ),
                           const SizedBox(height: 12),
+                          // Added Email TextField here
+                          TextField(
+                            controller: contacts[index]["email"],
+                            keyboardType: TextInputType.emailAddress,
+                            decoration: const InputDecoration(
+                              labelText: "Email Address",
+                              prefixIcon: Icon(Icons.email, size: 20),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
                           TextField(
                             controller: contacts[index]["relation"],
                             decoration: const InputDecoration(
@@ -174,9 +185,9 @@ class _EmergencyContactsSetupScreenState extends State<EmergencyContactsSetupScr
                           String name = contact["name"]!.text.trim();
                           String phone = contact["phone"]!.text.trim();
                           String relation = contact["relation"]!.text.trim();
+                          String email = contact["email"]!.text.trim(); // Gathered email value
 
-                          // Enhanced safety validations mapping relationship criteria
-                          if (name.isEmpty || phone.isEmpty || relation.isEmpty) {
+                          if (name.isEmpty || phone.isEmpty || relation.isEmpty || email.isEmpty) {
                             Fluttertoast.showToast(msg: "Fill all fields");
                             return;
                           }
@@ -190,6 +201,7 @@ class _EmergencyContactsSetupScreenState extends State<EmergencyContactsSetupScr
                             "name": name,
                             "phone": phone,
                             "relation": relation,
+                            "email": email, // Added email field map update
                           });
                         }
 
