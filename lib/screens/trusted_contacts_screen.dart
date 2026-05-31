@@ -144,14 +144,27 @@ class TrustedContactsScreen extends StatelessWidget {
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FC),
+      backgroundColor: const Color(0xFF050B2C),
       appBar: AppBar(
-        backgroundColor: primaryPink,
+        backgroundColor: const Color(0xFF050B2C),
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.white,
+          ),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+
         title: const Text(
           "Trusted Contacts",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
       body: user == null
@@ -319,6 +332,7 @@ class TrustedContactsScreen extends StatelessWidget {
     required VoidCallback onDelete,
   }) {
     return Container(
+
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -327,6 +341,15 @@ class TrustedContactsScreen extends StatelessWidget {
         boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 10)],
       ),
       child: Row(
+
+    margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: const Color(0xFF1B1E4B),
+      borderRadius: BorderRadius.circular(25),
+    ),
+    child: Row(
+
         children: [
           CircleAvatar(
             radius: 26,
@@ -338,6 +361,7 @@ class TrustedContactsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+<<<<<<< HEAD
                 Text(name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 3),
                 Text(relation, style: const TextStyle(color: Colors.grey, fontSize: 13)),
@@ -345,17 +369,53 @@ class TrustedContactsScreen extends StatelessWidget {
                 Text(phone, style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.black87)),
                 const SizedBox(height: 3),
                 Text(email, style: const TextStyle(fontSize: 12, color: Colors.blueGrey)), // Visualized email UI addition
+=======
+    Text(
+    name,
+    style: const TextStyle(
+    fontSize: 17,
+    fontWeight: FontWeight.bold,
+    color: Colors.white,
+    ),
+    ),
+
+    const SizedBox(height: 3),
+
+    Text(
+    relation,
+    style: const TextStyle(
+    color: Colors.white70,
+    fontSize: 13,
+    ),
+    ),
+
+    const SizedBox(height: 3),
+
+    Text(
+    phone,
+    style: const TextStyle(
+    fontWeight: FontWeight.w500,
+    color: Colors.white,
+    ),
+    ),
+>>>>>>> b9dd2ba2d36908d8fccb552e1e6853db1589fc8e
               ],
             ),
           ),
-          IconButton(
-            icon: Icon(Icons.call, color: color),
+    IconButton(
+    icon: const Icon(
+    Icons.call,
+    color: Color(0xFFE91E63),
+    ),
             onPressed: () {
               if (phone.isNotEmpty) _makePhoneCall(phone);
             },
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Colors.grey),
+    icon: const Icon(
+    Icons.more_vert,
+    color: Colors.white70,
+    ),
             onSelected: (action) {
               if (action == 'edit') onEdit();
               if (action == 'delete') onDelete();
