@@ -1,3 +1,4 @@
+import 'recordings_menu_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -5,7 +6,6 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'login_screen.dart';
 import 'edit_profile_screen.dart';
 import 'trusted_contacts_screen.dart';
-import 'recordings_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -248,7 +248,7 @@ class ProfileScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const RecordingsScreen(),
+                              builder: (_) => const RecordingsMenuScreen(),
                             ),
                           );
                         },
@@ -319,7 +319,7 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             title,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
               color: Colors.white,

@@ -1,5 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'self_defense_screen.dart';
 import 'live_location_screen.dart';
@@ -9,12 +13,82 @@ import 'record_audio_screen.dart';
 import 'trusted_contacts_screen.dart';
 import 'profile_screen.dart';
 
-class HomeScreen extends StatelessWidget {
-
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
-  // FEATURE CARD
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
 
+class _HomeScreenState extends State<HomeScreen> {
+  final FlutterTts flutterTts = FlutterTts();
+  String _currentUserName = "User";
+  bool _isLoadingName = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Delays slightly to allow the UI and native audio drivers to settle on boot
+    Future.delayed(
+      const Duration(milliseconds: 800),
+      () {
+        if (mounted) {
+          speakWelcome();
+        }
+      },
+    );
+  }
+
+  Future<void> speakWelcome() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      String name = "User";
+
+      if (user != null) {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        if (doc.exists && doc.data() != null) {
+          final data = doc.data();
+          // Uses your exact Firestore property key 'fullName'
+          name = data?['fullName'] ?? "User";
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _currentUserName = name;
+          _isLoadingName = false;
+        });
+      }
+
+      // Voice settings setup
+      await flutterTts.setLanguage("en-US");
+      await flutterTts.setSpeechRate(0.45);
+      await flutterTts.setVolume(1.0);
+      
+      await flutterTts.speak(
+        "Hello $name. "
+        "I am Guardian Bot. "
+        "Your safety monitoring is active. "
+        "If you are in danger, say help me, save me, emergency, or I am in danger. "
+        "I will immediately alert your trusted contacts."
+      );
+    } catch (e) {
+      debugPrint("Error loading name or initializing TTS: $e");
+      if (mounted) {
+        setState(() {
+          _isLoadingName = false;
+        });
+      }
+      // Safety fallback text-to-speech if network fails
+      await flutterTts.speak("Hello. I am Guardian Bot. I am protecting you.");
+    }
+  }
+
+  // FEATURE CARD
   Widget featureCard({
     required Color color,
     required IconData icon,
@@ -34,7 +108,6 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-
             Container(
               height: 65,
               width: 65,
@@ -54,9 +127,7 @@ class HomeScreen extends StatelessWidget {
                 size: 32,
               ),
             ),
-
             const SizedBox(height: 12),
-
             Text(
               title,
               textAlign: TextAlign.center,
@@ -66,9 +137,7 @@ class HomeScreen extends StatelessWidget {
                 fontSize: 17,
               ),
             ),
-
             const SizedBox(height: 8),
-
             Flexible(
               child: Text(
                 subtitle,
@@ -89,7 +158,6 @@ class HomeScreen extends StatelessWidget {
   }
 
   // QUICK ACCESS CARD
-
   Widget quickAccessCard({
     required String image,
     required String title,
@@ -135,30 +203,22 @@ class HomeScreen extends StatelessWidget {
   }
 
   // OPEN URL
-
   Future<void> openUrl(String url) async {
-
     final Uri uri = Uri.parse(url);
-
     await launchUrl(
-
       uri,
-
       mode: LaunchMode.externalApplication,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: const Color(0xFF0B1023),
-
       appBar: AppBar(
         backgroundColor: const Color(0xFF0B1023),
         elevation: 4,
         shadowColor: Colors.black54,
-
         title: RichText(
           text: const TextSpan(
             children: [
@@ -183,7 +243,17 @@ class HomeScreen extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () async {
+              print("BUTTON PRESSED");
+
+              await flutterTts.setLanguage("en-US");
+              await flutterTts.setVolume(1.0);
+              await flutterTts.setSpeechRate(0.5);
+
+              await flutterTts.speak(
+                "Testing Guardian Bot voice"
+              );
+            },
             icon: const Icon(
               Icons.notifications_none,
               color: Colors.white,
@@ -191,24 +261,14 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-
       body: SingleChildScrollView(
-
         padding: const EdgeInsets.all(18),
-
         child: Column(
-
-          crossAxisAlignment:
-          CrossAxisAlignment.start,
-
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            // TOP CARD
-
+            // TOP WELCOME CARD
             Container(
-
               padding: const EdgeInsets.all(18),
-
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [
@@ -219,9 +279,7 @@ class HomeScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(25),
               ),
               child: Row(
-
                 children: [
-
                   Container(
                     height: 60,
                     width: 60,
@@ -240,42 +298,29 @@ class HomeScreen extends StatelessWidget {
                       size: 30,
                     ),
                   ),
-
                   const SizedBox(width: 15),
-
-                  const Expanded(
-
+                  Expanded(
                     child: Column(
-
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-
                         Text(
-
-                          "Guardian is Active",
-
-                          style: TextStyle(
+                          _isLoadingName ? "Syncing Systems..." : "Active: $_currentUserName",
+                          style: const TextStyle(
                             color: Color(0xFFFF7EB3),
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-
                           ),
                         ),
-
-                        SizedBox(height: 8),
-
-                        Text(
+                        const SizedBox(height: 8),
+                        const Text(
                           "AI is monitoring your safety 24x7",
                           style: TextStyle(
-                              color: Colors.white70,
+                            color: Colors.white70,
                           ),
                         ),
                       ],
                     ),
                   ),
-
                   Image.asset(
                     "assets/images/girl.png",
                     height: 90,
@@ -283,9 +328,7 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(height: 25),
-
             const Text(
               "How can we help you?",
               style: TextStyle(
@@ -295,204 +338,116 @@ class HomeScreen extends StatelessWidget {
                 letterSpacing: 0.5,
               ),
             ),
-
             const SizedBox(height: 20),
-
             GridView.count(
-
               shrinkWrap: true,
-
-              physics:
-              const NeverScrollableScrollPhysics(),
-
+              physics: const NeverScrollableScrollPhysics(),
               crossAxisCount: 2,
-
               crossAxisSpacing: 15,
-
               mainAxisSpacing: 15,
-
               childAspectRatio: 0.78,
-
               children: [
-
                 // VOICE DETECTION
-
                 featureCard(
-
                   color: Colors.pink,
-
                   icon: Icons.mic,
-
                   title: "Voice Detection",
-
-                  subtitle:
-                  "Detect distress voices automatically",
-
+                  subtitle: "Detect distress voices automatically",
                   onTap: () {
-
                     Navigator.push(
-
                       context,
-
                       MaterialPageRoute(
-                        builder: (_) =>
-                        const VoiceDetectionScreen(),
+                        builder: (_) => const VoiceDetectionScreen(),
                       ),
                     );
                   },
                 ),
-
                 // SOUND DETECTION
-
                 featureCard(
-
                   color: Colors.deepPurple,
-
                   icon: Icons.graphic_eq,
-
                   title: "Sound Detection",
-
-                  subtitle:
-                  "Detect screams or loud sounds",
-
+                  subtitle: "Detect screams or loud sounds",
                   onTap: () {
-
                     Navigator.push(
-
                       context,
-
                       MaterialPageRoute(
-                        builder: (_) =>
-                        const SoundDetectionScreen(),
+                        builder: (_) => const SoundDetectionScreen(),
                       ),
                     );
                   },
                 ),
-
                 // RECORD AUDIO
-
                 featureCard(
-
                   color: Colors.blue,
-
                   icon: Icons.mic_none,
-
                   title: "Record Audio",
-
-                  subtitle:
-                  "Record evidence securely",
-
+                  subtitle: "Record evidence securely",
                   onTap: () {
-
                     Navigator.push(
-
                       context,
-
                       MaterialPageRoute(
-                        builder: (_) =>
-                        const RecordAudioScreen(),
+                        builder: (_) => const RecordAudioScreen(),
                       ),
                     );
                   },
                 ),
-
                 // SELF DEFENSE
-
                 featureCard(
-
                   color: Colors.green,
-
                   icon: Icons.security,
-
                   title: "Self Defense",
-
-                  subtitle:
-                  "Learn techniques & stay safe",
-
+                  subtitle: "Learn techniques & stay safe",
                   onTap: () {
-
                     Navigator.push(
-
                       context,
-
                       MaterialPageRoute(
-                        builder: (_) =>
-                        const SelfDefenseScreen(),
+                        builder: (_) => const SelfDefenseScreen(),
                       ),
                     );
                   },
                 ),
               ],
             ),
-
             const SizedBox(height: 30),
-
             const Text(
-
               "Quick Access",
-
               style: TextStyle(
                 fontSize: 22,
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 15),
-
             Container(
-
               padding: const EdgeInsets.all(15),
-
               decoration: BoxDecoration(
                 color: const Color(0xFF161B33),
-
                 borderRadius: BorderRadius.circular(25),
-
                 border: Border.all(
                   color: Colors.white10,
                 ),
               ),
-
               child: Row(
-
-                mainAxisAlignment:
-                MainAxisAlignment.spaceAround,
-
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-
                   quickAccessCard(
-
-                    image:
-                    "assets/images/uber.jpeg",
-
+                    image: "assets/images/uber.jpeg",
                     title: "Uber",
-
-
                     onTap: () {
                       openUrl("https://m.uber.com/");
                     },
                   ),
-
                   quickAccessCard(
-
-                    image:
-                    "assets/images/ola.jpeg",
-
+                    image: "assets/images/ola.jpeg",
                     title: "Ola",
-
                     onTap: () {
                       openUrl("https://book.olacabs.com/");
                     },
                   ),
-
                   quickAccessCard(
-
-                    image:
-                    "assets/images/rapido.jpeg",
-
+                    image: "assets/images/rapido.jpeg",
                     title: "Rapido",
-
                     onTap: () {
                       openUrl("https://www.rapido.bike/");
                     },
@@ -500,83 +455,50 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(height: 25),
-
             const Text(
-
               "Explore LiveSafe",
-
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 15),
-
             Container(
-
               padding: const EdgeInsets.all(15),
-
               decoration: BoxDecoration(
-
                 color: const Color(0xFF161B33),
-
                 borderRadius: BorderRadius.circular(25),
-
                 border: Border.all(
                   color: Colors.white10,
                 ),
               ),
-
               child: Row(
-
-                mainAxisAlignment:
-                MainAxisAlignment.spaceAround,
-
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-
                   quickAccessCard(
-
-                    image:
-                    "assets/images/hospital.jpeg",
-
+                    image: "assets/images/hospital.jpeg",
                     title: "Hospitals",
-
                     onTap: () {
-
                       openUrl(
                         "https://www.google.com/maps/search/nearest+hospitals/",
                       );
                     },
                   ),
-
                   quickAccessCard(
-
-                    image:
-                    "assets/images/police.jpeg",
-
+                    image: "assets/images/police.jpeg",
                     title: "Police",
-
                     onTap: () {
-
                       openUrl(
                         "https://www.google.com/maps/search/nearest+police+station/",
                       );
                     },
                   ),
-
                   quickAccessCard(
-
-                    image:
-                    "assets/images/bus.png",
-
+                    image: "assets/images/bus.png",
                     title: "Bus",
-
                     onTap: () {
-
                       openUrl(
                         "https://www.google.com/maps/search/nearest+bus+station/",
                       );
@@ -585,68 +507,43 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(height: 25),
-
             Container(
-
               padding: const EdgeInsets.all(18),
-
               decoration: BoxDecoration(
-
                 color: const Color(0xFF161B33),
-
                 borderRadius: BorderRadius.circular(25),
-
                 border: Border.all(
                   color: Colors.white10,
                 ),
               ),
-
               child: Row(
-
                 children: [
-
                   Image.asset(
                     "assets/images/robot.jpeg",
                     height: 80,
                   ),
-
                   const SizedBox(width: 15),
-
                   const Expanded(
-
                     child: Column(
-
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-
                         Text(
-
                           "AI Guardian is Always Watching",
-
                           style: TextStyle(
-
-                            fontWeight:
-                            FontWeight.bold,
-
+                            fontWeight: FontWeight.bold,
                             color: Color(0xFFFF7EB3),
-
                             fontSize: 18,
                           ),
                         ),
-
                         SizedBox(height: 10),
-
                         Text(
                           "We'll alert trusted contacts instantly if danger is detected.",
                           style: TextStyle(
                             color: Colors.white70,
                             fontSize: 14,
                             height: 1.4,
-                          ),
+          ) ,
                         ),
                       ],
                     ),
@@ -654,12 +551,10 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(height: 30),
           ],
         ),
       ),
-
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: const Color(0xFF161B33),
         type: BottomNavigationBarType.fixed,
@@ -667,9 +562,7 @@ class HomeScreen extends StatelessWidget {
         currentIndex: 0,
         selectedItemColor: Colors.pink,
         unselectedItemColor: Colors.grey,
-
         onTap: (index) {
-
           if (index == 1) {
             Navigator.push(
               context,
@@ -678,7 +571,6 @@ class HomeScreen extends StatelessWidget {
               ),
             );
           }
-
           if (index == 2) {
             Navigator.push(
               context,
@@ -687,7 +579,6 @@ class HomeScreen extends StatelessWidget {
               ),
             );
           }
-
           if (index == 3) {
             Navigator.push(
               context,
@@ -697,24 +588,19 @@ class HomeScreen extends StatelessWidget {
             );
           }
         },
-
         items: const [
-
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: "Home",
           ),
-
           BottomNavigationBarItem(
             icon: Icon(Icons.location_on),
             label: "Live Location",
           ),
-
           BottomNavigationBarItem(
             icon: Icon(Icons.people),
             label: "Contacts",
           ),
-
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: "Profile",
@@ -722,5 +608,11 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    flutterTts.stop();
+    super.dispose();
   }
 }

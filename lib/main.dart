@@ -27,6 +27,7 @@ class GuardianBotApp extends StatelessWidget {
       title: 'GuardianBot',
       theme: ThemeData(
         primaryColor: const Color(0xFFE91E63),
+        useMaterial3: true,
       ),
       // App kicks off directly at the splash loading animation context
       home: const SplashScreen(),
@@ -35,9 +36,9 @@ class GuardianBotApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginScreen(),
         '/profile-setup': (context) => const ProfileSetupScreen(),
-         '/emergency-contacts': (context) =>
-      const EmergencyContactsSetupScreen(),
-        '/home': (context) => const HomeScreen(),
+        '/emergency-contacts': (context) => const EmergencyContactsSetupScreen(),
+        // FIXED: 'const' removed from HomeScreen() so it compiles perfectly
+        '/home': (context) => HomeScreen(),
       },
     );
   }
@@ -70,13 +71,13 @@ class AuthChecker extends StatelessWidget {
           );
         }
 
-        // Fix 2: If user is authenticated but has no Firestore document, route straight to Profile Setup
+        // If user is authenticated but has no Firestore document, route straight to Profile Setup
         if (!snapshot.hasData || !snapshot.data!.exists) {
           return const ProfileSetupScreen();
         }
 
-        // Fully registered user goes to Home Screen
-        return const HomeScreen();
+        // FIXED: 'const' removed from HomeScreen() here as well
+        return HomeScreen();
       },
     );
   }

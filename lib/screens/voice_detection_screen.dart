@@ -8,6 +8,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:record/record.dart';
+import 'package:path_provider/path_provider.dart';
 
 class VoiceDetectionScreen extends StatefulWidget {
   const VoiceDetectionScreen({super.key});
@@ -18,10 +20,15 @@ class VoiceDetectionScreen extends StatefulWidget {
 
 class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
   final SpeechToText speechToText = SpeechToText();
+  final AudioRecorder emergencyRecorder = AudioRecorder();
 
+  bool emergencyTriggered = false;
+  bool emergencyRecording = false;
+
+  String emergencyAudioPath = "";
   bool isListening = false;
-  String spokenText = "AI is monitoring voice continuously";
-  String status = "Waiting for voice...";
+  String spokenText = "Listening for voice triggers...";
+  String status = "AI is monitoring for keywords";
 
   @override
   void initState() {
@@ -144,12 +151,12 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
     );
 
     String locationLink =
-        "https://maps.google.com/?q=${position.latitude},${position.longitude}";
+        "https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}";
 
-String userName = data['fullName'] ?? "Unknown";
-String userPhone = data['phone'] ?? "Unknown";
-print("FIRESTORE NAME: $userName");
-print("FIRESTORE PHONE: $userPhone");
+    String userName = data['fullName'] ?? "Unknown";
+    String userPhone = data['phone'] ?? "Unknown";
+    print("FIRESTORE NAME: $userName");
+    print("FIRESTORE PHONE: $userPhone");
 
     for (var contact in contacts) {
       String email = contact['email'] ?? "";
@@ -169,6 +176,48 @@ print("FIRESTORE PHONE: $userPhone");
     );
   }
 
+  // START EMERGENCY AUDIO RECORDING
+  Future<void> startEmergencyRecording() async {
+    if (await emergencyRecorder.hasPermission()) {
+      final dir = await getApplicationDocumentsDirectory();
+
+      emergencyAudioPath =
+          "${dir.path}/emergency_${DateTime.now().millisecondsSinceEpoch}.m4a";
+
+      await emergencyRecorder.start(
+        const RecordConfig(),
+        path: emergencyAudioPath,
+      );
+
+      setState(() {
+        emergencyRecording = true;
+        status = "🎙 Emergency Recording Started";
+      });
+
+      print("Emergency Recording Started");
+    }
+  }
+
+  // STOP EMERGENCY AUDIO RECORDING
+  Future<void> stopEmergencyRecording() async {
+    try {
+      final path = await emergencyRecorder.stop();
+
+      setState(() {
+        emergencyRecording = false;
+        status = "✅ Emergency Recording Saved";
+      });
+
+      print("Emergency Recording Saved: $path");
+
+      Fluttertoast.showToast(
+        msg: "Emergency Evidence Saved",
+      );
+    } catch (e) {
+      print(e);
+    }
+  }
+
   // START LISTENING
   Future<void> startListening() async {
     bool available = await speechToText.initialize();
@@ -179,11 +228,11 @@ print("FIRESTORE PHONE: $userPhone");
 
       speechToText.listen(
         listenMode: ListenMode.confirmation,
-        onResult: (result) {
+        onResult: (result) async {
           setState(() {
             spokenText = result.recognizedWords;
           });
-          detectDanger(result.recognizedWords);
+          await detectDanger(result.recognizedWords);
         },
       );
     }
@@ -197,21 +246,51 @@ print("FIRESTORE PHONE: $userPhone");
     });
   }
 
-  // DETECT DANGER KEYWORDS
-  void detectDanger(String text) {
+  // FIXED: Dynamic logic sequence reordered exactly to specs
+  Future<void> detectDanger(String text) async {
+    if (emergencyTriggered) return;
+
     List<String> dangerWords = [
       "help",
+      "help me",
       "save me",
       "emergency",
-      "stop",
       "danger",
       "please help",
+      "someone is following me",
+      "someone is chasing me",
+      "i am scared",
+      "i am afraid",
+      "i am in danger",
+      "call my parents",
+      "call my mother",
+      "call my father",
+      "i feel unsafe",
+      "i need help",
+      "please save me",
+      "there is a stranger",
+      "someone is behind me",
+      "he is following me",
     ];
 
     for (String word in dangerWords) {
       if (text.toLowerCase().contains(word)) {
-        autoCallTrustedContact();
+        emergencyTriggered = true;
+
+        await startEmergencyRecording();
+
         sendEmergencyAlert();
+
+        Future.delayed(
+          const Duration(seconds: 30),
+          () async {
+            await stopEmergencyRecording();
+
+            autoCallTrustedContact();
+
+            emergencyTriggered = false;
+          },
+        );
 
         setState(() {
           status = "🚨 Distress Voice Detected!";
@@ -220,6 +299,7 @@ print("FIRESTORE PHONE: $userPhone");
         Fluttertoast.showToast(
           msg: "Emergency Alert Activated",
         );
+
         break;
       }
     }
@@ -228,6 +308,7 @@ print("FIRESTORE PHONE: $userPhone");
   @override
   void dispose() {
     speechToText.stop();
+    emergencyRecorder.dispose();
     super.dispose();
   }
 
@@ -237,6 +318,7 @@ print("FIRESTORE PHONE: $userPhone");
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: const Color(0xffE91E63),
+        iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
           "Distress Voice Detection",
           style: TextStyle(color: Colors.white),
@@ -289,14 +371,35 @@ print("FIRESTORE PHONE: $userPhone");
               ),
             ),
             const SizedBox(height: 30),
-            Text(
-              status,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.red,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+            Column(
+              children: [
+                if (emergencyRecording)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      "🎙 Emergency Recording In Progress...",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 15),
+                Text(
+                  status,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 40),
             ElevatedButton.icon(
