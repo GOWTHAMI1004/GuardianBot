@@ -16,6 +16,7 @@ class EmergencyContactsSetupScreen extends StatefulWidget {
 
 class _EmergencyContactsSetupScreenState
     extends State<EmergencyContactsSetupScreen> {
+class _EmergencyContactsSetupScreenState extends State<EmergencyContactsSetupScreen> {
   final List<Map<String, TextEditingController>> contacts = [];
   bool _isLoading = false;
 
@@ -29,6 +30,7 @@ class _EmergencyContactsSetupScreenState
         "name": TextEditingController(),
         "phone": TextEditingController(),
         "relation": TextEditingController(),
+        "email": TextEditingController(), // Added email controller
       });
     });
   }
@@ -39,6 +41,7 @@ class _EmergencyContactsSetupScreenState
         contacts[index]["name"]?.dispose();
         contacts[index]["phone"]?.dispose();
         contacts[index]["relation"]?.dispose();
+        contacts[index]["email"]?.dispose(); // Disposed email controller
         contacts.removeAt(index);
       });
     } else {
@@ -58,6 +61,7 @@ class _EmergencyContactsSetupScreenState
       contact["name"]?.dispose();
       contact["phone"]?.dispose();
       contact["relation"]?.dispose();
+      contact["email"]?.dispose(); // Disposed email controller
     }
     super.dispose();
   }
@@ -171,6 +175,23 @@ class _EmergencyContactsSetupScreenState
                             labelText: "Relationship (e.g., Mother, Friend)",
                             icon: Icons.family_restroom_outlined,
                             accentColor: accentPink,
+                          const SizedBox(height: 12),
+                          // Added Email TextField here
+                          TextField(
+                            controller: contacts[index]["email"],
+                            keyboardType: TextInputType.emailAddress,
+                            decoration: const InputDecoration(
+                              labelText: "Email Address",
+                              prefixIcon: Icon(Icons.email, size: 20),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: contacts[index]["relation"],
+                            decoration: const InputDecoration(
+                              labelText: "Relationship (e.g., Mother, Friend)",
+                              prefixIcon: Icon(Icons.family_restroom, size: 20),
+                            ),
                           ),
                         ],
                       ),
@@ -197,6 +218,54 @@ class _EmergencyContactsSetupScreenState
                       icon: const Icon(Icons.add_rounded, size: 20),
                       label: Text(
                         "Add Another Guardian",
+                      onPressed: () async {
+                        List<Map<String, String>> contactDataList = [];
+                        
+                        for (var contact in contacts) {
+                          String name = contact["name"]!.text.trim();
+                          String phone = contact["phone"]!.text.trim();
+                          String relation = contact["relation"]!.text.trim();
+                          String email = contact["email"]!.text.trim(); // Gathered email value
+
+                          if (name.isEmpty || phone.isEmpty || relation.isEmpty || email.isEmpty) {
+                            Fluttertoast.showToast(msg: "Fill all fields");
+                            return;
+                          }
+
+                          if (!RegExp(r'^[0-9]{10}$').hasMatch(phone)) {
+                            Fluttertoast.showToast(msg: "Phone number must be 10 digits");
+                            return;
+                          }
+                          
+                          contactDataList.add({
+                            "name": name,
+                            "phone": phone,
+                            "relation": relation,
+                            "email": email, // Added email field map update
+                          });
+                        }
+
+                        setState(() => _isLoading = true);
+                        final user = FirebaseAuth.instance.currentUser;
+
+                        if (user != null) {
+                          await FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(user.uid)
+                              .update({
+                            'emergencyContacts': contactDataList,
+                            'contactsConfigured': true,
+                          });
+                        }
+
+                        setState(() => _isLoading = false);
+                        if (!mounted) return;
+
+                        Fluttertoast.showToast(msg: "Setup Complete!");
+                        Navigator.pushReplacementNamed(context, '/home');
+                      },
+                      child: Text(
+                        "Finish Setup",
                         style: GoogleFonts.inter(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,

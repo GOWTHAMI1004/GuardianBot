@@ -30,6 +30,7 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
     startListening();
   }
 
+  // Calls the first trusted contact explicitly using index 0
   Future<void> autoCallTrustedContact() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -52,6 +53,11 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
   }
 
   Future<void> sendSMS(String phone, String message) async {
+  // Fast2SMS Send Function
+  Future<void> sendSMS(
+    String phone,
+    String message,
+  ) async {
     const String apiKey = "j2ZnO0eWSClGYc8T8xkbRArpy61KZDSCIRq4kXGYRGJOoEfbqD7mzpbOuUGR";
 
     try {
@@ -75,9 +81,55 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
     } catch (e) {
       print("FAST2SMS HTTP ERROR: $e");
       Fluttertoast.showToast(msg: "Failed to send SMS via API");
+
+    } catch (e, s) {
+      print("SMS ERROR FULL: $e");
+      print("STACK TRACE: $s");
     }
   }
 
+  // Clean EmailJS Send via Direct REST API
+  Future<void> sendEmergencyEmail(
+    String recipientEmail,
+    String userName,
+    String userPhone,
+    String location,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse("https://api.emailjs.com/api/v1.0/email/send"),
+        headers: {
+          "origin": "http://localhost",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "service_id": "service_w1qsadz",
+          "template_id": "template_zoqvluj",
+          "user_id": "MDc5uTaB1QnGevaid",
+          "template_params": {
+            "user_name": userName,
+            "user_phone": userPhone,
+            "location": location,
+            "time": DateTime.now().toString(),
+            "to_email": recipientEmail,
+          }
+        }),
+      );
+
+      print("EMAIL STATUS: ${response.statusCode}");
+      print("EMAIL BODY: ${response.body}");
+
+      if (response.statusCode == 200) {
+        Fluttertoast.showToast(
+          msg: "Emergency Email Sent Successfully",
+        );
+      }
+    } catch (e) {
+      print("EMAIL FAILED: $e");
+    }
+  }
+
+  // Completely Re-Assembled Emergency Alert Loop
   Future<void> sendEmergencyAlert() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -91,15 +143,6 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
     if (data == null) return;
 
     List<dynamic> contacts = data['emergencyContacts'] ?? [];
-    if (contacts.isEmpty) return;
-
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) return;
-
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
 
     Position position = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
@@ -108,10 +151,10 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
     String locationLink =
         "https://maps.google.com/?q=${position.latitude},${position.longitude}";
 
-    String message =
-        "🚨 EMERGENCY ALERT 🚨\n\n"
-        "I need help.\n\n"
-        "Live Location:\n$locationLink";
+String userName = data['fullName'] ?? "Unknown";
+String userPhone = data['phone'] ?? "Unknown";
+print("FIRESTORE NAME: $userName");
+print("FIRESTORE PHONE: $userPhone");
 
     for (var contact in contacts) {
       String phone = contact['phone'] ?? "";
@@ -121,6 +164,21 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
     }
 
     Fluttertoast.showToast(msg: "Emergency SMS Sent");
+      String email = contact['email'] ?? "";
+
+      if (email.isNotEmpty) {
+        await sendEmergencyEmail(
+          email,
+          userName,
+          userPhone,
+          locationLink,
+        );
+      }
+    }
+
+    Fluttertoast.showToast(
+      msg: "Emergency Email Sent",
+    );
   }
 
   Future<void> startListening() async {
