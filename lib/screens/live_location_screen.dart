@@ -4,8 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
-// Preserving your exact import workspace schemas
-import 'contact_selection_screen.dart';
+// Preserving intact navigation schemas - updated broken import reference
+import 'emergency_contacts_setup_screen.dart';
 import 'trusted_contacts_screen.dart';
 import 'profile_screen.dart';
 
@@ -243,7 +243,7 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => ContactSelectionScreen()),
+                      MaterialPageRoute(builder: (_) => const EmergencyContactsSetupScreen()),
                     );
                   },
                   child: const Text("Track", style: TextStyle(color: Colors.white)),
@@ -272,7 +272,7 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
                         width: 210,
                         height: 210,
                         child: CircularProgressIndicator(
-                          value: _isTimerActive ? progressPercentage : progressPercentage,
+                          value: progressPercentage,
                           strokeWidth: 8,
                           valueColor: const AlwaysStoppedAnimation<Color>(primaryPink),
                           backgroundColor: cardBackground.withOpacity(0.5),

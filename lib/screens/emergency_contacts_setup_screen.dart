@@ -16,7 +16,6 @@ class EmergencyContactsSetupScreen extends StatefulWidget {
 
 class _EmergencyContactsSetupScreenState
     extends State<EmergencyContactsSetupScreen> {
-class _EmergencyContactsSetupScreenState extends State<EmergencyContactsSetupScreen> {
   final List<Map<String, TextEditingController>> contacts = [];
   bool _isLoading = false;
 
@@ -30,7 +29,7 @@ class _EmergencyContactsSetupScreenState extends State<EmergencyContactsSetupScr
         "name": TextEditingController(),
         "phone": TextEditingController(),
         "relation": TextEditingController(),
-        "email": TextEditingController(), // Added email controller
+        "email": TextEditingController(),
       });
     });
   }
@@ -41,7 +40,7 @@ class _EmergencyContactsSetupScreenState extends State<EmergencyContactsSetupScr
         contacts[index]["name"]?.dispose();
         contacts[index]["phone"]?.dispose();
         contacts[index]["relation"]?.dispose();
-        contacts[index]["email"]?.dispose(); // Disposed email controller
+        contacts[index]["email"]?.dispose();
         contacts.removeAt(index);
       });
     } else {
@@ -61,7 +60,7 @@ class _EmergencyContactsSetupScreenState extends State<EmergencyContactsSetupScr
       contact["name"]?.dispose();
       contact["phone"]?.dispose();
       contact["relation"]?.dispose();
-      contact["email"]?.dispose(); // Disposed email controller
+      contact["email"]?.dispose();
     }
     super.dispose();
   }
@@ -175,23 +174,14 @@ class _EmergencyContactsSetupScreenState extends State<EmergencyContactsSetupScr
                             labelText: "Relationship (e.g., Mother, Friend)",
                             icon: Icons.family_restroom_outlined,
                             accentColor: accentPink,
-                          const SizedBox(height: 12),
-                          // Added Email TextField here
-                          TextField(
-                            controller: contacts[index]["email"],
-                            keyboardType: TextInputType.emailAddress,
-                            decoration: const InputDecoration(
-                              labelText: "Email Address",
-                              prefixIcon: Icon(Icons.email, size: 20),
-                            ),
                           ),
-                          const SizedBox(height: 12),
-                          TextField(
-                            controller: contacts[index]["relation"],
-                            decoration: const InputDecoration(
-                              labelText: "Relationship (e.g., Mother, Friend)",
-                              prefixIcon: Icon(Icons.family_restroom, size: 20),
-                            ),
+                          const SizedBox(height: 16),
+                          _buildInnerField(
+                            controller: contacts[index]["email"]!,
+                            labelText: "Email Address",
+                            icon: Icons.email_outlined,
+                            keyboardType: TextInputType.emailAddress,
+                            accentColor: accentPink,
                           ),
                         ],
                       ),
@@ -218,54 +208,6 @@ class _EmergencyContactsSetupScreenState extends State<EmergencyContactsSetupScr
                       icon: const Icon(Icons.add_rounded, size: 20),
                       label: Text(
                         "Add Another Guardian",
-                      onPressed: () async {
-                        List<Map<String, String>> contactDataList = [];
-                        
-                        for (var contact in contacts) {
-                          String name = contact["name"]!.text.trim();
-                          String phone = contact["phone"]!.text.trim();
-                          String relation = contact["relation"]!.text.trim();
-                          String email = contact["email"]!.text.trim(); // Gathered email value
-
-                          if (name.isEmpty || phone.isEmpty || relation.isEmpty || email.isEmpty) {
-                            Fluttertoast.showToast(msg: "Fill all fields");
-                            return;
-                          }
-
-                          if (!RegExp(r'^[0-9]{10}$').hasMatch(phone)) {
-                            Fluttertoast.showToast(msg: "Phone number must be 10 digits");
-                            return;
-                          }
-                          
-                          contactDataList.add({
-                            "name": name,
-                            "phone": phone,
-                            "relation": relation,
-                            "email": email, // Added email field map update
-                          });
-                        }
-
-                        setState(() => _isLoading = true);
-                        final user = FirebaseAuth.instance.currentUser;
-
-                        if (user != null) {
-                          await FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(user.uid)
-                              .update({
-                            'emergencyContacts': contactDataList,
-                            'contactsConfigured': true,
-                          });
-                        }
-
-                        setState(() => _isLoading = false);
-                        if (!mounted) return;
-
-                        Fluttertoast.showToast(msg: "Setup Complete!");
-                        Navigator.pushReplacementNamed(context, '/home');
-                      },
-                      child: Text(
-                        "Finish Setup",
                         style: GoogleFonts.inter(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
@@ -282,80 +224,82 @@ class _EmergencyContactsSetupScreenState extends State<EmergencyContactsSetupScr
                       child: _isLoading
                           ? const Center(child: CircularProgressIndicator(color: accentPink))
                           : Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: accentPink.withOpacity(0.3),
-                              blurRadius: 15,
-                              offset: const Offset(0, 4),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: accentPink.withOpacity(0.3),
+                                    blurRadius: 15,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: accentPink,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                onPressed: () async {
+                                  List<Map<String, String>> contactDataList = [];
+
+                                  for (var contact in contacts) {
+                                    String name = contact["name"]!.text.trim();
+                                    String phone = contact["phone"]!.text.trim();
+                                    String relation = contact["relation"]!.text.trim();
+                                    String email = contact["email"]!.text.trim();
+
+                                    if (name.isEmpty || phone.isEmpty || relation.isEmpty || email.isEmpty) {
+                                      Fluttertoast.showToast(msg: "Fill all fields");
+                                      return;
+                                    }
+
+                                    if (!RegExp(r'^[0-9]{10}$').hasMatch(phone)) {
+                                      Fluttertoast.showToast(msg: "Phone number must be 10 digits");
+                                      return;
+                                    }
+
+                                    contactDataList.add({
+                                      "name": name,
+                                      "phone": phone,
+                                      "relation": relation,
+                                      "email": email,
+                                    });
+                                  }
+
+                                  setState(() => _isLoading = true);
+                                  final user = FirebaseAuth.instance.currentUser;
+
+                                  if (user != null) {
+                                    await FirebaseFirestore.instance
+                                        .collection('users')
+                                        .doc(user.uid)
+                                        .update({
+                                      'emergencyContacts': contactDataList,
+                                      'contactsConfigured': true,
+                                    });
+                                  }
+
+                                  setState(() => _isLoading = false);
+                                  if (!mounted) return;
+
+                                  Fluttertoast.showToast(msg: "Setup Complete!");
+                                  Navigator.pushReplacementNamed(context, '/home');
+                                },
+                                child: Text(
+                                  "Finish Setup",
+                                  style: GoogleFonts.inter(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
                             ),
-                          ],
-                        ),
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: accentPink,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          onPressed: () async {
-                            List<Map<String, String>> contactDataList = [];
-
-                            for (var contact in contacts) {
-                              String name = contact["name"]!.text.trim();
-                              String phone = contact["phone"]!.text.trim();
-                              String relation = contact["relation"]!.text.trim();
-
-                              if (name.isEmpty || phone.isEmpty || relation.isEmpty) {
-                                Fluttertoast.showToast(msg: "Fill all fields");
-                                return;
-                              }
-
-                              if (!RegExp(r'^[0-9]{10}$').hasMatch(phone)) {
-                                Fluttertoast.showToast(msg: "Phone number must be 10 digits");
-                                return;
-                              }
-
-                              contactDataList.add({
-                                "name": name,
-                                "phone": phone,
-                                "relation": relation,
-                              });
-                            }
-
-                            setState(() => _isLoading = true);
-                            final user = FirebaseAuth.instance.currentUser;
-
-                            if (user != null) {
-                              await FirebaseFirestore.instance
-                                  .collection('users')
-                                  .doc(user.uid)
-                                  .update({
-                                'emergencyContacts': contactDataList,
-                                'contactsConfigured': true,
-                              });
-                            }
-
-                            setState(() => _isLoading = false);
-                            if (!mounted) return;
-
-                            Fluttertoast.showToast(msg: "Setup Complete!");
-                            Navigator.pushReplacementNamed(context, '/home');
-                          },
-                          child: Text(
-                            "Finish Setup",
-                            style: GoogleFonts.inter(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                      ),
                     ),
                   ],
                 ),

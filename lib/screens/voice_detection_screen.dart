@@ -50,21 +50,24 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
     final data = doc.data() as Map<String, dynamic>?;
     if (data == null) return;
 
+    // --- EXACT FIX BLOCK APPLIED HERE ---
     List<dynamic> contacts = data['emergencyContacts'] ?? [];
+
     if (contacts.isEmpty) return;
 
-    String phone = contacts[0]['phone'] ?? "";
+    Map<String, dynamic> firstContact =
+        Map<String, dynamic>.from(contacts.first);
+
+    String phone = firstContact["phone"].toString();
+
     if (phone.isEmpty) return;
 
     await FlutterPhoneDirectCaller.callNumber(phone);
+    // -------------------------------------
   }
 
-  Future<void> sendSMS(String phone, String message) async {
   // Fast2SMS Send Function
-  Future<void> sendSMS(
-    String phone,
-    String message,
-  ) async {
+  Future<void> sendSMS(String phone, String message) async {
     const String apiKey = "j2ZnO0eWSClGYc8T8xkbRArpy61KZDSCIRq4kXGYRGJOoEfbqD7mzpbOuUGR";
 
     try {
@@ -88,10 +91,6 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
     } catch (e) {
       print("FAST2SMS HTTP ERROR: $e");
       Fluttertoast.showToast(msg: "Failed to send SMS via API");
-
-    } catch (e, s) {
-      print("SMS ERROR FULL: $e");
-      print("STACK TRACE: $s");
     }
   }
 
@@ -159,35 +158,36 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
         "https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}";
 
     String userName = data['fullName'] ?? "Unknown";
-    String userPhone = data['phone'] ?? "Unknown";
+    String userPhone = (data['phone'] ?? "Unknown").toString();
     print("FIRESTORE NAME: $userName");
     print("FIRESTORE PHONE: $userPhone");
 
-    for (var contact in contacts) {
-      String phone = contact['phone'] ?? "";
-      if (phone.isNotEmpty) {
-        await sendSMS(phone, message);
+    String message = "EMERGENCY! $userName needs help. Location: $locationLink";
+
+    // Replicated matching strict map conversion inside the loop context
+    for (var contactElement in contacts) {
+      if (contactElement != null) {
+        Map<String, dynamic> contact = Map<String, dynamic>.from(contactElement);
+        String phone = contact['phone']?.toString() ?? "";
+        
+        if (phone.isNotEmpty) {
+          await sendSMS(phone, message);
+        }
+        
+        String email = contact['email']?.toString() ?? "";
+        if (email.isNotEmpty) {
+          await sendEmergencyEmail(
+            email,
+            userName,
+            userPhone,
+            locationLink,
+          );
+        }
       }
     }
 
-    Fluttertoast.showToast(msg: "Emergency SMS Sent");
-      String email = contact['email'] ?? "";
-
-      if (email.isNotEmpty) {
-        await sendEmergencyEmail(
-          email,
-          userName,
-          userPhone,
-          locationLink,
-        );
-      }
-    }
-
-    Fluttertoast.showToast(
-      msg: "Emergency Email Sent",
-    );
+    Fluttertoast.showToast(msg: "Emergency SMS and Email Sent");
   }
-
 
   // START EMERGENCY AUDIO RECORDING
   Future<void> startEmergencyRecording() async {
@@ -232,8 +232,6 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
   }
 
   // START LISTENING
-
-
   Future<void> startListening() async {
     bool available = await speechToText.initialize();
     if (available) {
@@ -260,13 +258,8 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
     });
   }
 
-
-  // FIXED: Dynamic logic sequence reordered exactly to specs
   Future<void> detectDanger(String text) async {
     if (emergencyTriggered) return;
-
-
-  void detectDanger(String text) {
 
     List<String> dangerWords = [
       "help",
@@ -296,30 +289,24 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
         emergencyTriggered = true;
 
         await startEmergencyRecording();
-
-        sendEmergencyAlert();
-
-        Future.delayed(
-          const Duration(seconds: 30),
-          () async {
-            await stopEmergencyRecording();
-
-            autoCallTrustedContact();
-
-            emergencyTriggered = false;
-          },
-        );
+        await sendEmergencyAlert();
 
         setState(() {
           status = "🚨 Distress Voice Detected!";
         });
 
-
         Fluttertoast.showToast(
           msg: "Emergency Alert Activated",
         );
 
-        Fluttertoast.showToast(msg: "Emergency Alert Activated");
+        Future.delayed(
+          const Duration(seconds: 30),
+          () async {
+            await stopEmergencyRecording();
+            await autoCallTrustedContact();
+            emergencyTriggered = false;
+          },
+        );
 
         break;
       }
@@ -335,22 +322,12 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Theme design systems
     const Color backgroundTop = Color(0xFF090D22);
     const Color backgroundBottom = Color(0xFF141933);
     const Color accentPink = Color(0xFFFA4A74);
     const Color surfaceContainer = Color(0xFF1E254C);
 
     return Scaffold(
-
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: const Color(0xffE91E63),
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
-          "Distress Voice Detection",
-          style: TextStyle(color: Colors.white),
-
       body: Container(
         height: MediaQuery.of(context).size.height,
         width: MediaQuery.of(context).size.width,
@@ -360,12 +337,10 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
-
         ),
         child: SafeArea(
           child: Column(
             children: [
-              // Navigation Header Row
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: Row(
@@ -397,7 +372,6 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
                     children: [
                       const Spacer(),
 
-                      // Radar Pulsing Circle Element Layout
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 400),
                         width: isListening ? 190 : 160,
@@ -417,6 +391,7 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
                                 color: accentPink.withOpacity(0.4),
                                 blurRadius: 30,
                                 spreadRadius: 4,
+                                offset: Offset.zero,
                               ),
                           ],
                         ),
@@ -431,7 +406,6 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
 
                       const SizedBox(height: 36),
 
-                      // State Label Status Header
                       Text(
                         isListening ? "AI Monitoring Active" : "AI Monitoring Stopped",
                         style: GoogleFonts.poppins(
@@ -444,7 +418,6 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
 
                       const SizedBox(height: 32),
 
-                      // Frosted dynamic telemetry transcription container box
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -469,12 +442,11 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
 
                       const SizedBox(height: 32),
 
-                      // Current status indicator layout
                       Text(
                         status,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
-                          color: status.contains("🚨") ? accentPink : const Color(0xFF4DEEEA), // Cyan when idle/waiting
+                          color: status.contains("🚨") || status.contains("🎙") ? accentPink : const Color(0xFF4DEEEA),
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.2,
@@ -483,7 +455,6 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
 
                       const Spacer(),
 
-                      // System Toggle Control CTA Bar Panel
                       SizedBox(
                         width: double.infinity,
                         height: 56,
@@ -535,70 +506,8 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
                   ),
                 ),
               ),
-
-              child: Text(
-                spokenText,
-                style: const TextStyle(fontSize: 20),
-              ),
-            ),
-            const SizedBox(height: 30),
-            Column(
-              children: [
-                if (emergencyRecording)
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      "🎙 Emergency Recording In Progress...",
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: 15),
-                Text(
-                  status,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 40),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.pink,
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-              ),
-              onPressed: () {
-                if (isListening) {
-                  stopListening();
-                } else {
-                  startListening();
-                }
-              },
-              icon: Icon(
-                isListening ? Icons.stop : Icons.play_arrow,
-                color: Colors.white,
-              ),
-              label: Text(
-                isListening ? "Stop Monitoring" : "Start Monitoring",
-                style: const TextStyle(color: Colors.white, fontSize: 18),
-              ),
-            ),
-          ],
-
             ],
           ),
-
         ),
       ),
     );
