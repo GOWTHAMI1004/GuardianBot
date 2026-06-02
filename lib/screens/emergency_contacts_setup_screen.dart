@@ -4,19 +4,18 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
-class EmergencyContactsSetupScreen
-    extends StatefulWidget {
-
+class EmergencyContactsSetupScreen extends StatefulWidget {
   const EmergencyContactsSetupScreen({
     super.key,
   });
 
   @override
-  State<EmergencyContactsSetupScreen>
-      createState() =>
-          _EmergencyContactsSetupScreenState();
+  State<EmergencyContactsSetupScreen> createState() =>
+      _EmergencyContactsSetupScreenState();
 }
-class _EmergencyContactsSetupScreenState extends State<EmergencyContactsSetupScreen> {
+
+class _EmergencyContactsSetupScreenState
+    extends State<EmergencyContactsSetupScreen> {
   final List<Map<String, TextEditingController>> contacts = [];
   bool _isLoading = false;
 
@@ -65,35 +64,68 @@ class _EmergencyContactsSetupScreenState extends State<EmergencyContactsSetupScr
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryPink = Color(0xFFE91E63);
+    // Theme palette constants matching profile setup
+    const Color backgroundTop = Color(0xFF090D22);
+    const Color backgroundBottom = Color(0xFF141933);
+    const Color accentPink = Color(0xFFFA4A74);
+    const Color surfaceContainer = Color(0xFF1E254C);
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: primaryPink,
-        elevation: 0,
-        title: Text(
-          "Emergency Contacts",
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
+      body: Container(
+        height: MediaQuery.of(context).size.height,
+        width: MediaQuery.of(context).size.width,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [backgroundTop, backgroundBottom],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
         ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                itemCount: contacts.length,
-                itemBuilder: (context, index) {
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Clean Integrated Navigation Top Bar
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                      onPressed: () => Navigator.maybePop(context),
+                    ),
+                    const Spacer(),
+                    Text(
+                      "Emergency Contacts",
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    const SizedBox(width: 40),
+                  ],
+                ),
+              ),
+
+              // Scrollable Guardians Workspace Area
+              Expanded(
+                child: ListView.builder(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(24.0, 12.0, 24.0, 0.0),
+                  itemCount: contacts.length,
+                  itemBuilder: (context, index) {
+                    return Container(
+                      margin: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: surfaceContainer.withOpacity(0.35),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: surfaceContainer.withOpacity(0.5),
+                          width: 1.5,
+                        ),
+                      ),
+                      padding: const EdgeInsets.all(20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -104,125 +136,194 @@ class _EmergencyContactsSetupScreenState extends State<EmergencyContactsSetupScr
                                 "Guardian #${index + 1}",
                                 style: GoogleFonts.poppins(
                                   fontWeight: FontWeight.bold,
-                                  color: primaryPink,
+                                  fontSize: 16,
+                                  color: accentPink,
+                                  letterSpacing: 0.5,
                                 ),
                               ),
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                                onPressed: () => removeContact(index),
-                              )
+                              if (contacts.length > 1)
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 22),
+                                  onPressed: () => removeContact(index),
+                                )
                             ],
                           ),
-                          TextField(
-                            controller: contacts[index]["name"],
-                            decoration: const InputDecoration(
-                              labelText: "Trusted Guardian Name",
-                              prefixIcon: Icon(Icons.person, size: 20),
-                            ),
+                          const SizedBox(height: 16),
+
+                          // Input Fields inside card context
+                          _buildInnerField(
+                            controller: contacts[index]["name"]!,
+                            labelText: "Trusted Guardian Name",
+                            icon: Icons.person_outline_rounded,
+                            accentColor: accentPink,
                           ),
-                          const SizedBox(height: 12),
-                          TextField(
-                            controller: contacts[index]["phone"],
+                          const SizedBox(height: 16),
+                          _buildInnerField(
+                            controller: contacts[index]["phone"]!,
+                            labelText: "Mobile Number",
+                            icon: Icons.phone_outlined,
                             keyboardType: TextInputType.phone,
-                            decoration: const InputDecoration(
-                              labelText: "Mobile Number",
-                              prefixIcon: Icon(Icons.phone, size: 20),
-                            ),
+                            accentColor: accentPink,
                           ),
-                          const SizedBox(height: 12),
-                          TextField(
-                            controller: contacts[index]["relation"],
-                            decoration: const InputDecoration(
-                              labelText: "Relationship (e.g., Mother, Friend)",
-                              prefixIcon: Icon(Icons.family_restroom, size: 20),
-                            ),
+                          const SizedBox(height: 16),
+                          _buildInnerField(
+                            controller: contacts[index]["relation"]!,
+                            labelText: "Relationship (e.g., Mother, Friend)",
+                            icon: Icons.family_restroom_outlined,
+                            accentColor: accentPink,
                           ),
                         ],
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: primaryPink,
-                side: const BorderSide(color: primaryPink, width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
-              onPressed: addContact,
-              icon: const Icon(Icons.add),
-              label: Text("Add Another Guardian", style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator(color: primaryPink))
-                  : ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryPink,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+
+              // Bottom Dynamic Actions Layout Bar
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Styled Dynamic Contact Append Button
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: accentPink,
+                        side: const BorderSide(color: accentPink, width: 1.5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
                       ),
-                      onPressed: () async {
-                        List<Map<String, String>> contactDataList = [];
-                        
-                        for (var contact in contacts) {
-                          String name = contact["name"]!.text.trim();
-                          String phone = contact["phone"]!.text.trim();
-                          String relation = contact["relation"]!.text.trim();
-
-                          // Enhanced safety validations mapping relationship criteria
-                          if (name.isEmpty || phone.isEmpty || relation.isEmpty) {
-                            Fluttertoast.showToast(msg: "Fill all fields");
-                            return;
-                          }
-
-                          if (!RegExp(r'^[0-9]{10}$').hasMatch(phone)) {
-                            Fluttertoast.showToast(msg: "Phone number must be 10 digits");
-                            return;
-                          }
-                          
-                          contactDataList.add({
-                            "name": name,
-                            "phone": phone,
-                            "relation": relation,
-                          });
-                        }
-
-                        setState(() => _isLoading = true);
-                        final user = FirebaseAuth.instance.currentUser;
-
-                        if (user != null) {
-                          await FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(user.uid)
-                              .update({
-                            'emergencyContacts': contactDataList,
-                            'contactsConfigured': true,
-                          });
-                        }
-
-                        setState(() => _isLoading = false);
-                        if (!mounted) return;
-
-                        Fluttertoast.showToast(msg: "Setup Complete!");
-                        Navigator.pushReplacementNamed(context, '/home');
-                      },
-                      child: Text(
-                        "Finish Setup",
+                      onPressed: addContact,
+                      icon: const Icon(Icons.add_rounded, size: 20),
+                      label: Text(
+                        "Add Another Guardian",
                         style: GoogleFonts.inter(
-                          fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          fontSize: 14,
+                          letterSpacing: 0.2,
                         ),
                       ),
                     ),
-            ),
-          ],
+                    const SizedBox(height: 20),
+
+                    // Final Submit Configuration CTA Panel
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: _isLoading
+                          ? const Center(child: CircularProgressIndicator(color: accentPink))
+                          : Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: accentPink.withOpacity(0.3),
+                              blurRadius: 15,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: accentPink,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          onPressed: () async {
+                            List<Map<String, String>> contactDataList = [];
+
+                            for (var contact in contacts) {
+                              String name = contact["name"]!.text.trim();
+                              String phone = contact["phone"]!.text.trim();
+                              String relation = contact["relation"]!.text.trim();
+
+                              if (name.isEmpty || phone.isEmpty || relation.isEmpty) {
+                                Fluttertoast.showToast(msg: "Fill all fields");
+                                return;
+                              }
+
+                              if (!RegExp(r'^[0-9]{10}$').hasMatch(phone)) {
+                                Fluttertoast.showToast(msg: "Phone number must be 10 digits");
+                                return;
+                              }
+
+                              contactDataList.add({
+                                "name": name,
+                                "phone": phone,
+                                "relation": relation,
+                              });
+                            }
+
+                            setState(() => _isLoading = true);
+                            final user = FirebaseAuth.instance.currentUser;
+
+                            if (user != null) {
+                              await FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(user.uid)
+                                  .update({
+                                'emergencyContacts': contactDataList,
+                                'contactsConfigured': true,
+                              });
+                            }
+
+                            setState(() => _isLoading = false);
+                            if (!mounted) return;
+
+                            Fluttertoast.showToast(msg: "Setup Complete!");
+                            Navigator.pushReplacementNamed(context, '/home');
+                          },
+                          child: Text(
+                            "Finish Setup",
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Individual field component nested cleanly inside the dark frosted contact block
+  Widget _buildInnerField({
+    required TextEditingController controller,
+    required String labelText,
+    required IconData icon,
+    required Color accentColor,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF090D22).withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        style: GoogleFonts.inter(color: Colors.white, fontSize: 15),
+        cursorColor: accentColor,
+        decoration: InputDecoration(
+          labelText: labelText,
+          labelStyle: GoogleFonts.inter(color: Colors.white.withOpacity(0.35), fontSize: 13),
+          floatingLabelStyle: GoogleFonts.inter(color: accentColor, fontWeight: FontWeight.w600),
+          prefixIcon: Icon(icon, color: accentColor, size: 18),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 14.0, horizontal: 4.0),
         ),
       ),
     );

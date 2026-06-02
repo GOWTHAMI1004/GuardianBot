@@ -1,79 +1,55 @@
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class RecordAudioScreen extends StatefulWidget {
   const RecordAudioScreen({super.key});
 
   @override
-  State<RecordAudioScreen> createState() =>
-      _RecordAudioScreenState();
+  State<RecordAudioScreen> createState() => _RecordAudioScreenState();
 }
 
-class _RecordAudioScreenState
-    extends State<RecordAudioScreen> {
-
-  final AudioRecorder audioRecorder =
-      AudioRecorder();
-
+class _RecordAudioScreenState extends State<RecordAudioScreen> {
+  final AudioRecorder audioRecorder = AudioRecorder();
   bool isRecording = false;
-
-  String status =
-      "Press button to record";
-
+  String status = "Press button to record";
   String audioPath = "";
 
   // START RECORDING
-
   Future<void> startRecording() async {
-
     if (await audioRecorder.hasPermission()) {
-
-      final dir =
-          await getApplicationDocumentsDirectory();
-
-      audioPath =
-          "${dir.path}/emergency_audio.m4a";
+      final dir = await getApplicationDocumentsDirectory();
+      audioPath = "${dir.path}/emergency_audio.m4a";
 
       await audioRecorder.start(
-
         const RecordConfig(),
-
         path: audioPath,
       );
 
       setState(() {
-
         isRecording = true;
-
         status = "Recording Started...";
       });
     }
   }
 
   // STOP RECORDING
-
   Future<void> stopRecording() async {
-
-    final path =
-        await audioRecorder.stop();
+    final path = await audioRecorder.stop();
 
     setState(() {
-
       isRecording = false;
-
       audioPath = path ?? "";
-
-      status =
-      "Audio Saved Successfully";
+      status = "Audio Saved Successfully";
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-
       SnackBar(
-
+        backgroundColor: const Color(0xFF1E254C),
         content: Text(
           "Recording Saved:\n$audioPath",
+          style: GoogleFonts.inter(color: Colors.white),
         ),
       ),
     );
@@ -83,129 +59,150 @@ class _RecordAudioScreenState
 
   @override
   void dispose() {
-
     audioRecorder.dispose();
-
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    const Color backgroundTop = Color(0xFF090D22);
+    const Color backgroundBottom = Color(0xFF141933);
+    const Color accentPink = Color(0xFFFA4A74);
+    const Color surfaceContainer = Color(0xFF1E254C);
 
     return Scaffold(
-
-      backgroundColor: Colors.white,
-
-      appBar: AppBar(
-
-        backgroundColor:
-        const Color(0xffE91E63),
-
-        title: const Text(
-
-          "Record Audio",
-
-          style: TextStyle(
-            color: Colors.white,
+      body: Container(
+        height: MediaQuery.of(context).size.height,
+        width: MediaQuery.of(context).size.width,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [backgroundTop, backgroundBottom],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
         ),
-      ),
-
-      body: Center(
-
-        child: Padding(
-
-          padding: const EdgeInsets.all(20),
-
+        child: SafeArea(
           child: Column(
-
-            mainAxisAlignment:
-            MainAxisAlignment.center,
-
             children: [
-
-              // RECORD BUTTON
-
-              AnimatedContainer(
-
-                duration:
-                const Duration(milliseconds: 300),
-
-                width:
-                isRecording ? 180 : 160,
-
-                height:
-                isRecording ? 180 : 160,
-
-                decoration: BoxDecoration(
-
-                  shape: BoxShape.circle,
-
-                  color: isRecording
-                      ? Colors.red.shade100
-                      : Colors.pink.shade100,
+              // Clean Integrated Navigation Top Bar
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                      onPressed: () => Navigator.maybePop(context),
+                    ),
+                    const Spacer(),
+                    Text(
+                      "Record Audio Evidence",
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    const SizedBox(width: 40),
+                  ],
                 ),
+              ),
 
-                child: IconButton(
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Spacer(),
 
-                  iconSize: 80,
+                      // Animated Pulse Recording Trigger Ring
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        width: isRecording ? 190 : 160,
+                        height: isRecording ? 190 : 160,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isRecording
+                              ? accentPink.withOpacity(0.15)
+                              : surfaceContainer.withOpacity(0.4),
+                          border: Border.all(
+                            color: isRecording ? accentPink : surfaceContainer,
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            if (isRecording)
+                              BoxShadow(
+                                color: accentPink.withOpacity(0.4),
+                                blurRadius: 30,
+                                spreadRadius: 4,
+                              ),
+                          ],
+                        ),
+                        child: Center(
+                          child: IconButton(
+                            iconSize: 75,
+                            icon: Icon(
+                              isRecording ? Icons.stop_rounded : Icons.mic_rounded,
+                              color: isRecording ? accentPink : Colors.white.withOpacity(0.4),
+                            ),
+                            onPressed: () {
+                              if (isRecording) {
+                                stopRecording();
+                              } else {
+                                startRecording();
+                              }
+                            },
+                          ),
+                        ),
+                      ),
 
-                  icon: Icon(
+                      const SizedBox(height: 40),
 
-                    isRecording
-                        ? Icons.stop
-                        : Icons.mic,
+                      // Execution Progress State Text
+                      Text(
+                        status,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: isRecording ? accentPink : Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
 
-                    color: Colors.pink,
+                      const SizedBox(height: 28),
+
+                      // Saved Directory Location Card Panel
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                        decoration: BoxDecoration(
+                          color: surfaceContainer.withOpacity(0.35),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: surfaceContainer.withOpacity(0.5),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Text(
+                          audioPath.isEmpty
+                              ? "No recording saved yet"
+                              : "Saved Location:\n$audioPath",
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: audioPath.isEmpty
+                                ? Colors.white.withOpacity(0.4)
+                                : const Color(0xFF4DEEEA), // High tech neon cyan when file exists
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+
+                      const Spacer(),
+                    ],
                   ),
-
-                  onPressed: () {
-
-                    if (isRecording) {
-                      stopRecording();
-                    } else {
-                      startRecording();
-                    }
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 40),
-
-              // STATUS TEXT
-
-              Text(
-
-                status,
-
-                textAlign: TextAlign.center,
-
-                style: const TextStyle(
-
-                  fontSize: 24,
-
-                  fontWeight:
-                  FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // SAVED FILE PATH
-
-              Text(
-
-                audioPath.isEmpty
-                    ? "No recording saved yet"
-                    : "Saved File:\n$audioPath",
-
-                textAlign: TextAlign.center,
-
-                style: const TextStyle(
-
-                  fontSize: 14,
-
-                  color: Colors.black54,
                 ),
               ),
             ],

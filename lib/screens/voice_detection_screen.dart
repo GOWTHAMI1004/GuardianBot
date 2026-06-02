@@ -7,6 +7,7 @@ import 'package:speech_to_text/speech_to_text.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 class VoiceDetectionScreen extends StatefulWidget {
@@ -29,7 +30,6 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
     startListening();
   }
 
-  // FIXED BUG 1: Accessing the first contact element from the list safely
   Future<void> autoCallTrustedContact() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -51,12 +51,7 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
     await FlutterPhoneDirectCaller.callNumber(phone);
   }
 
-  // Fast2SMS Send Function with Response Tracking Loggers
-  Future<void> sendSMS(
-    String phone,
-    String message,
-  ) async {
-    // ⚠️ Remember to paste your REGENERATED Fast2SMS key here
+  Future<void> sendSMS(String phone, String message) async {
     const String apiKey = "j2ZnO0eWSClGYc8T8xkbRArpy61KZDSCIRq4kXGYRGJOoEfbqD7mzpbOuUGR";
 
     try {
@@ -77,7 +72,6 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
 
       print("FAST2SMS STATUS: ${response.statusCode}");
       print("FAST2SMS BODY: ${response.body}");
-
     } catch (e) {
       print("FAST2SMS HTTP ERROR: $e");
       Fluttertoast.showToast(msg: "Failed to send SMS via API");
@@ -119,24 +113,16 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
         "I need help.\n\n"
         "Live Location:\n$locationLink";
 
-    // FIXED BUG 2: Correctly reading target map values element-by-element inside the iteration
     for (var contact in contacts) {
       String phone = contact['phone'] ?? "";
-
       if (phone.isNotEmpty) {
-        await sendSMS(
-          phone,
-          message,
-        );
+        await sendSMS(phone, message);
       }
     }
 
-    Fluttertoast.showToast(
-      msg: "Emergency SMS Sent",
-    );
+    Fluttertoast.showToast(msg: "Emergency SMS Sent");
   }
 
-  // START LISTENING
   Future<void> startListening() async {
     bool available = await speechToText.initialize();
     if (available) {
@@ -156,7 +142,6 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
     }
   }
 
-  // STOP LISTENING
   void stopListening() {
     speechToText.stop();
     setState(() {
@@ -164,7 +149,6 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
     });
   }
 
-  // DETECT DANGER KEYWORDS
   void detectDanger(String text) {
     List<String> dangerWords = [
       "help",
@@ -184,9 +168,7 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
           status = "🚨 Distress Voice Detected!";
         });
 
-        Fluttertoast.showToast(
-          msg: "Emergency Alert Activated",
-        );
+        Fluttertoast.showToast(msg: "Emergency Alert Activated");
         break;
       }
     }
@@ -200,94 +182,198 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Theme design systems
+    const Color backgroundTop = Color(0xFF090D22);
+    const Color backgroundBottom = Color(0xFF141933);
+    const Color accentPink = Color(0xFFFA4A74);
+    const Color surfaceContainer = Color(0xFF1E254C);
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: const Color(0xffE91E63),
-        title: const Text(
-          "Distress Voice Detection",
-          style: TextStyle(color: Colors.white),
+      body: Container(
+        height: MediaQuery.of(context).size.height,
+        width: MediaQuery.of(context).size.width,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [backgroundTop, backgroundBottom],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
         ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              width: isListening ? 180 : 160,
-              height: isListening ? 180 : 160,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isListening ? Colors.red.shade100 : Colors.pink.shade100,
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Navigation Header Row
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                      onPressed: () => Navigator.maybePop(context),
+                    ),
+                    const Spacer(),
+                    Text(
+                      "Distress Voice Detection",
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    const SizedBox(width: 40),
+                  ],
+                ),
               ),
-              child: const Icon(
-                Icons.mic,
-                size: 90,
-                color: Colors.pink,
-              ),
-            ),
-            const SizedBox(height: 40),
-            Text(
-              isListening ? "AI Monitoring Active" : "AI Monitoring Stopped",
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 30),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(25),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.shade300,
-                    blurRadius: 10,
+
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Spacer(),
+
+                      // Radar Pulsing Circle Element Layout
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 400),
+                        width: isListening ? 190 : 160,
+                        height: isListening ? 190 : 160,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isListening
+                              ? accentPink.withOpacity(0.15)
+                              : surfaceContainer.withOpacity(0.4),
+                          border: Border.all(
+                            color: isListening ? accentPink : surfaceContainer,
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            if (isListening)
+                              BoxShadow(
+                                color: accentPink.withOpacity(0.4),
+                                blurRadius: 30,
+                                spreadRadius: 4,
+                              ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.mic_rounded,
+                            size: 75,
+                            color: isListening ? accentPink : Colors.white.withOpacity(0.4),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 36),
+
+                      // State Label Status Header
+                      Text(
+                        isListening ? "AI Monitoring Active" : "AI Monitoring Stopped",
+                        style: GoogleFonts.poppins(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Frosted dynamic telemetry transcription container box
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                        decoration: BoxDecoration(
+                          color: surfaceContainer.withOpacity(0.35),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: surfaceContainer.withOpacity(0.5),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Text(
+                          spokenText,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            color: Colors.white.withOpacity(0.85),
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Current status indicator layout
+                      Text(
+                        status,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          color: status.contains("🚨") ? accentPink : const Color(0xFF4DEEEA), // Cyan when idle/waiting
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+
+                      const Spacer(),
+
+                      // System Toggle Control CTA Bar Panel
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: (isListening ? Colors.redAccent : accentPink).withOpacity(0.3),
+                                blurRadius: 15,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isListening ? const Color(0xFFD32F2F) : accentPink,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            onPressed: () {
+                              if (isListening) {
+                                stopListening();
+                              } else {
+                                startListening();
+                              }
+                            },
+                            icon: Icon(
+                              isListening ? Icons.stop_rounded : Icons.play_arrow_rounded,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                            label: Text(
+                              isListening ? "Stop Monitoring" : "Start Monitoring",
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
                   ),
-                ],
+                ),
               ),
-              child: Text(
-                spokenText,
-                style: const TextStyle(fontSize: 20),
-              ),
-            ),
-            const SizedBox(height: 30),
-            Text(
-              status,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.red,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 40),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.pink,
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-              ),
-              onPressed: () {
-                if (isListening) {
-                  stopListening();
-                } else {
-                  startListening();
-                }
-              },
-              icon: Icon(
-                isListening ? Icons.stop : Icons.play_arrow,
-                color: Colors.white,
-              ),
-              label: Text(
-                isListening ? "Stop Monitoring" : "Start Monitoring",
-                style: const TextStyle(color: Colors.white, fontSize: 18),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
