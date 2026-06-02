@@ -16,7 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
+
   bool _isLoading = false;
 
   /// Handles Google Sign-In and routing logic based on Firestore checks
@@ -26,50 +26,41 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // 1. Trigger the native Google account picker popup
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
-        // User cancelled the picker interface
         setState(() {
           _isLoading = false;
         });
         return;
       }
 
-      // 2. Obtain authentication details from the request
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
-      // 3. Create a new credential for Firebase Authentication
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      // 4. Sign into Firebase using the Google credential
       final UserCredential userCredential = await _auth.signInWithCredential(credential);
       final User? user = userCredential.user;
 
       if (user != null) {
-        // 5. Query Firestore to check if this user record already exists
         DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
 
         if (!mounted) return;
 
         if (userDoc.exists && userDoc.data() != null) {
-          // User exists -> Route straight past setup to Home Screen via named routes
           Fluttertoast.showToast(msg: "Welcome back, ${user.displayName}!");
           Navigator.pushReplacementNamed(context, '/home');
         } else {
-          // Brand New User -> Route into the Profile Setup pipeline via named routes
           Fluttertoast.showToast(msg: "Authentication successful! Let's set up your profile.");
           Navigator.pushReplacementNamed(context, '/profile-setup');
         }
       }
     } catch (e) {
-      // Error 1 Fix: Corrected to Toast.LENGTH_LONG
       Fluttertoast.showToast(
         msg: "Sign-In Failed: ${e.toString()}",
-        toastLength: Toast.LENGTH_LONG, 
+        toastLength: Toast.LENGTH_LONG,
       );
     } finally {
       if (mounted) {
@@ -82,110 +73,170 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Premium theme colors matching your safety application profile
-    const Color primaryDeepPurple = Color(0xFF4A154B);
+    // Core design palette constants matching your security ecosystem theme
+    const Color backgroundTop = Color(0xFF090D22);
+    const Color backgroundBottom = Color(0xFF141933);
+    const Color accentPink = Color(0xFFFA4A74);
+    const Color surfaceContainer = Color(0xFF1E254C);
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Modern Branding Icon Container
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: primaryDeepPurple.withOpacity(0.06),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.security_rounded,
-                    size: 80,
-                    color: primaryDeepPurple,
-                  ),
-                ),
-                const SizedBox(height: 24),
+      body: Container(
+        height: MediaQuery.of(context).size.height,
+        width: MediaQuery.of(context).size.width,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [backgroundTop, backgroundBottom],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 20),
 
-                // App Branding Title
-                Text(
-                  "GuardianBot",
-                  style: GoogleFonts.poppins(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: primaryDeepPurple,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-
-                // Subtitle Message
-                Text(
-                  "Welcome Back",
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 64),
-
-                // Professional Action Block (Only Google Button Remains)
-                _isLoading
-                    ? const CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(primaryDeepPurple),
-                      )
-                    : SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: OutlinedButton(
-                          onPressed: _handleGoogleSignIn,
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: Colors.grey[300]!, width: 1.5),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            backgroundColor: Colors.white,
-                            elevation: 0,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              // Error 3 Fix: Swapped network image for reliable offline icon
-                              const Icon(
-                                Icons.g_mobiledata,
-                                color: Colors.red,
-                                size: 34,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                "Continue with Google",
-                                style: GoogleFonts.inter(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                  // High-Tech Shield Branding Badge with soft ambient pink glow
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: surfaceContainer.withOpacity(0.35),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: surfaceContainer.withOpacity(0.5),
+                        width: 1.5,
                       ),
-                const SizedBox(height: 40),
-                
-                // Fine-print system indicator
-                Text(
-                  "Your data is completely encrypted and secured",
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: Colors.grey[400],
-                    fontWeight: FontWeight.w400,
+                      boxShadow: [
+                        BoxShadow(
+                          color: accentPink.withOpacity(0.15),
+                          blurRadius: 30,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.shield_outlined,
+                      size: 85,
+                      color: accentPink,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 32),
+
+                  // Dynamic Split-Tone App Title Grouping
+                  RichText(
+                    text: TextSpan(
+                      style: GoogleFonts.poppins(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                      children: const [
+                        TextSpan(
+                          text: 'Guardian',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        TextSpan(
+                          text: 'Bot',
+                          style: TextStyle(color: accentPink),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Clean Muted Subtitle Welcome Trace
+                  Text(
+                    "Welcome Back",
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      color: Colors.white.withOpacity(0.5),
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 64),
+
+                  // Dynamic Loading Interface / Action Button Layer
+                  _isLoading
+                      ? const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(accentPink),
+                  )
+                      : Container(
+                    width: double.infinity,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: OutlinedButton(
+                      onPressed: _handleGoogleSignIn,
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                          color: surfaceContainer.withOpacity(0.6),
+                          width: 1.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        backgroundColor: surfaceContainer.withOpacity(0.35),
+                        elevation: 0,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Clean, stylized single-letter G matching dark dashboard aesthetic
+                          Text(
+                            "G",
+                            style: GoogleFonts.poppins(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: accentPink,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Text(
+                            "Continue with Google",
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 56),
+
+                  // Fine-print privacy encryption notice layout
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Text(
+                      "Your data is completely encrypted and secured",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: Colors.white.withOpacity(0.3),
+                        fontWeight: FontWeight.w400,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           ),
         ),
