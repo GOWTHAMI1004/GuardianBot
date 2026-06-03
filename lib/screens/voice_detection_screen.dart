@@ -252,8 +252,14 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
       if (text.toLowerCase().contains(word)) {
         emergencyTriggered = true;
 
-        await startEmergencyRecording();
-        await sendEmergencyAlert();
+        // CALL IMMEDIATELY
+        autoCallTrustedContact();
+
+        // EMAIL IMMEDIATELY
+        sendEmergencyAlert();
+
+        // RECORD IN BACKGROUND
+        startEmergencyRecording();
 
         setState(() {
           status = "🚨 Distress Voice Detected!";
@@ -267,7 +273,6 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
           const Duration(seconds: 30),
           () async {
             await stopEmergencyRecording();
-            await autoCallTrustedContact();
             emergencyTriggered = false;
           },
         );

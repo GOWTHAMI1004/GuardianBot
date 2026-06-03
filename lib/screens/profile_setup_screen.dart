@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'home_screen.dart'; // Added to resolve the direct route navigation target
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -203,7 +204,13 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                               setState(() => _isLoading = false);
                               if (!mounted) return;
 
-                              Navigator.pushReplacementNamed(context, '/emergency-contacts');
+                              // Replaced Named Route implementation with standard PageRoute routing layout 
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const HomeScreen(),
+                                ),
+                              );
                             },
                             child: Text(
                               "Save & Continue",

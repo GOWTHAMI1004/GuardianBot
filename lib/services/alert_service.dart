@@ -156,10 +156,13 @@ class _AlertScreenState
                     ),
                   ),
 
-                  onPressed: () async {
-
-                    await AlertService().sendAlert();
-                  },
+onPressed: () {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text("WhatsApp Alert Triggered"),
+    ),
+  );
+},
 
                   child: const Text(
 

@@ -4,7 +4,11 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shake/shake.dart';
+import 'package:vibration/vibration.dart';
+import 'package:audioplayers/audioplayers.dart';
 
+import 'create_pin_screen.dart';
 import 'self_defense_screen.dart';
 import 'live_location_screen.dart';
 import 'voice_detection_screen.dart';
@@ -22,6 +26,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final FlutterTts flutterTts = FlutterTts();
+  final AudioPlayer player = AudioPlayer();
+  ShakeDetector? detector;
   String _currentUserName = "User";
   bool _isLoadingName = true;
 
@@ -39,11 +45,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final data = doc.data();
 
-    List<dynamic> contacts =
-        data?['emergencyContacts'] ?? [];
-
-    String safetyPin =
-        data?['safetyPin'] ?? "";
+    List<dynamic> contacts = data?['emergencyContacts'] ?? [];
+    String safetyPin = data?['safetyPin'] ?? "";
 
     if (contacts.isEmpty || safetyPin.isEmpty) {
       showDialog(
@@ -51,31 +54,47 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context) {
           return AlertDialog(
             backgroundColor: const Color(0xFF1B1E4B),
-
             title: const Text(
               "Complete Security Setup",
               style: TextStyle(
                 color: Colors.white,
               ),
             ),
-
             content: const Text(
               "Please complete:\n\n1. Emergency Contacts\n2. Safety PIN\n\nbefore using GuardianBot features.",
               style: TextStyle(
                 color: Colors.white70,
               ),
             ),
-
             actions: [
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const TrustedContactsScreen(),
+                    ),
+                  );
                 },
                 child: const Text(
-                  "OK",
-                  style: TextStyle(
-                    color: Colors.pink,
-                  ),
+                  "Emergency Contacts",
+                  style: TextStyle(color: Colors.pink),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const CreatePinScreen(),
+                    ),
+                  );
+                },
+                child: const Text(
+                  "Create PIN",
+                  style: TextStyle(color: Colors.green),
                 ),
               ),
             ],
@@ -92,7 +111,24 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Delays slightly to allow the UI and native audio drivers to settle on boot
+    
+    detector = ShakeDetector.autoStart(
+      shakeThresholdGravity: 2.0,
+      onPhoneShake: (ShakeEvent event) async {
+        print("PHONE SHAKEN");
+
+        if (await Vibration.hasVibrator() ?? false) {
+          Vibration.vibrate(duration: 3000);
+        }
+
+        await player.play(
+          AssetSource('siren.mp3'),
+        );
+
+        await flutterTts.speak("Emergency Alert. Please Help Me.");
+      },
+    );
+
     Future.delayed(
       const Duration(milliseconds: 800),
       () {
@@ -116,7 +152,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
         if (doc.exists && doc.data() != null) {
           final data = doc.data();
-          // Uses your exact Firestore property key 'fullName'
           name = data?['fullName'] ?? "User";
         }
       }
@@ -128,7 +163,6 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
 
-      // Voice settings setup
       await flutterTts.setLanguage("en-US");
       await flutterTts.setSpeechRate(0.45);
       await flutterTts.setVolume(1.0);
@@ -147,12 +181,11 @@ class _HomeScreenState extends State<HomeScreen> {
           _isLoadingName = false;
         });
       }
-      // Safety fallback text-to-speech if network fails
       await flutterTts.speak("Hello. I am Guardian Bot. I am protecting you.");
     }
   }
 
-  // FEATURE CARD
+  // FEATURE CARD (FIXED INDENTATION & STRAY PARENTHESIS ERROR)
   Widget featureCard({
     required Color color,
     required IconData icon,
@@ -309,14 +342,10 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             onPressed: () async {
               print("BUTTON PRESSED");
-
               await flutterTts.setLanguage("en-US");
               await flutterTts.setVolume(1.0);
               await flutterTts.setSpeechRate(0.5);
-
-              await flutterTts.speak(
-                "Testing Guardian Bot voice"
-              );
+              await flutterTts.speak("Testing Guardian Bot voice");
             },
             icon: const Icon(
               Icons.notifications_none,
@@ -425,7 +454,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                       builder: (_) => VoiceDetectionScreen(),
+                        builder: (_) => VoiceDetectionScreen(),
                       ),
                     );
                   },
@@ -561,27 +590,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     image: "assets/images/hospital.jpeg",
                     title: "Hospitals",
                     onTap: () {
-                      openUrl(
-                        "https://www.google.com/maps/search/nearest+hospitals/",
-                      );
+                      openUrl("https://www.google.com/maps/search/nearest+hospitals/");
                     },
                   ),
                   quickAccessCard(
                     image: "assets/images/police.jpeg",
                     title: "Police",
                     onTap: () {
-                      openUrl(
-                        "https://www.google.com/maps/search/nearest+police+station/",
-                      );
+                      openUrl("https://www.google.com/maps/search/nearest+police+station/");
                     },
                   ),
                   quickAccessCard(
                     image: "assets/images/bus.png",
                     title: "Bus",
                     onTap: () {
-                      openUrl(
-                        "https://www.google.com/maps/search/nearest+bus+station/",
-                      );
+                      openUrl("https://www.google.com/maps/search/nearest+bus+station/");
                     },
                   ),
                 ],
@@ -696,6 +719,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    detector?.stopListening();
+    player.dispose();
     flutterTts.stop();
     super.dispose();
   }

@@ -4,9 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'emergency_contacts_setup_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 // Preserving intact navigation schemas - updated broken import reference
-import 'emergency_contacts_setup_screen.dart';
 import 'trusted_contacts_screen.dart';
 import 'profile_screen.dart';
 
@@ -23,8 +24,35 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
   bool _isTimerActive = false;
   final int _maxDuration = 3600; // 1 Hour limit max
 
-  // Hardcoded safety PIN for checking in (1234)
-  static const String _correctPIN = "1234";
+  String _correctPIN = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSafetyPin();
+  }
+
+  Future<void> _loadSafetyPin() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user == null) return;
+
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (doc.exists) {
+        setState(() {
+          _correctPIN =
+              doc.data()?['safetyPin']?.toString() ?? "";
+        });
+      }
+    } catch (e) {
+      print("PIN LOAD ERROR: $e");
+    }
+  }
 
   void _toggleTimer() {
     if (_isTimerActive) {
@@ -71,10 +99,12 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
 
   void _handleTimerExpiry() {
     _countdownTimer?.cancel();
+
     setState(() {
       _isTimerActive = false;
     });
-    _triggerAutomatedEmergencyAlert();
+
+    _showPinVerificationDialog();
   }
 
   // Captures and prints high-accuracy location details automatically if timeout occurs
@@ -106,6 +136,22 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
   // Secure Material PIN prompt dialog box
   void _showPinVerificationDialog() {
     final TextEditingController pinController = TextEditingController();
+    Timer? pinTimeout;
+
+    pinTimeout = Timer(
+      const Duration(seconds: 30),
+      () {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+
+          Fluttertoast.showToast(
+            msg: "No PIN entered. Emergency mode activated.",
+          );
+
+          _triggerAutomatedEmergencyAlert();
+        }
+      },
+    );
 
     showDialog(
       context: context,
@@ -147,7 +193,10 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
           actionsAlignment: MainAxisAlignment.spaceEvenly,
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                pinTimeout?.cancel();
+                Navigator.pop(context);
+              },
               child: Text("Cancel", style: GoogleFonts.inter(color: Colors.white.withOpacity(0.5))),
             ),
             ElevatedButton(
@@ -157,6 +206,7 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
               ),
               onPressed: () {
                 if (pinController.text == _correctPIN) {
+                  pinTimeout?.cancel();
                   Navigator.pop(context);
                   _stopCountdown();
                   Fluttertoast.showToast(msg: "Journey ended safely.");

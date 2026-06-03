@@ -17,9 +17,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final TextEditingController bloodGroupController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
   final TextEditingController medicalNotesController = TextEditingController();
-  final TextEditingController safetyPinController = TextEditingController();
-
-  bool hidePin = true;
   
   String? selectedGender;
   bool _isLoading = false;
@@ -47,7 +44,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             bloodGroupController.text = data['bloodGroup'] ?? '';
             addressController.text = data['address'] ?? '';
             medicalNotesController.text = data['medicalNotes'] ?? '';
-            safetyPinController.text = data['safetyPin'] ?? '';
             if (data['gender'] != null) {
               selectedGender = data['gender'];
             }
@@ -67,7 +63,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     bloodGroupController.dispose();
     addressController.dispose();
     medicalNotesController.dispose();
-    safetyPinController.dispose();
     super.dispose();
   }
 
@@ -174,54 +169,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
-                    const SizedBox(height: 18),
-
-                    // Security Configurations Section
-                    const Divider(height: 32, thickness: 1.2),
-                    const Text(
-                      "Security Settings",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryPink),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      "Set a 4-digit safety PIN required to deactivate emergency SOS signals manually.",
-                      style: TextStyle(fontSize: 13, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Fully Formatted Safety PIN Field
-                    TextFormField(
-                      controller: safetyPinController,
-                      obscureText: hidePin,
-                      keyboardType: TextInputType.number,
-                      maxLength: 4,
-                      decoration: InputDecoration(
-                        labelText: "Safety SOS PIN",
-                        counterText: "", // Removes standard length text counter label banner
-                        prefixIcon: const Icon(Icons.lock_outline_rounded, color: primaryPink),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            hidePin ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                            color: Colors.grey,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              hidePin = !hidePin;
-                            });
-                          },
-                        ),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return "Please configure a safety PIN";
-                        }
-                        if (value.trim().length != 4 || int.tryParse(value) == null) {
-                          return "PIN must be exactly 4 numbers";
-                        }
-                        return null;
-                      },
-                    ),
                     const SizedBox(height: 35),
 
                     // Save Action Button
@@ -251,7 +198,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                         'bloodGroup': bloodGroupController.text.trim(),
                                         'address': addressController.text.trim(),
                                         'medicalNotes': medicalNotesController.text.trim(),
-                                        'safetyPin': safetyPinController.text.trim(),
                                       });
                                       
                                       Fluttertoast.showToast(msg: "Vitals Updated Successfully!");
