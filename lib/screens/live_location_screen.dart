@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert'; // Added for jsonEncode
+import 'package:http/http.dart' as http; // Added for EmailJS API calls
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
@@ -6,6 +8,7 @@ import 'emergency_contacts_setup_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 
 // Preserving intact navigation schemas - updated broken import reference
 import 'trusted_contacts_screen.dart';
@@ -109,12 +112,22 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
 
   // Captures and prints high-accuracy location details automatically if timeout occurs
   Future<void> _triggerAutomatedEmergencyAlert() async {
+    print("SOS FUNCTION STARTED");
+
     Fluttertoast.showToast(
-      msg: "🚨 Safety Check-In Failed! Deploying SOS Alerts...",
-      toastLength: Toast.LENGTH_LONG,
+      msg: "SOS FUNCTION STARTED",
     );
 
     try {
+      print("BEFORE EMAIL");
+      await sendEmergencyAlert();
+      print("AFTER EMAIL");
+
+      print("BEFORE CALL");
+      await autoCallTrustedContact();
+      print("AFTER CALL");
+
+      // Fallback location safety logging
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) return;
 
@@ -129,8 +142,133 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
 
       print("TIMER EXPIRY SOS DEPLOYED - LAT: ${position.latitude}, LNG: ${position.longitude}");
     } catch (e) {
-      print("AUTOMATED SOS ERROR: $e");
+      print("SOS ERROR: $e");
     }
+  }
+
+  // --- Emergency System Control Operations ---
+
+  Future<void> autoCallTrustedContact() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    DocumentSnapshot doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    final data = doc.data() as Map<String, dynamic>?;
+    if (data == null) return;
+
+    List<dynamic> contacts = data['emergencyContacts'] ?? [];
+
+    if (contacts.isEmpty) return;
+
+    Map<String, dynamic> firstContact =
+        Map<String, dynamic>.from(contacts.first);
+
+    String phone = firstContact["phone"].toString();
+
+    if (phone.isEmpty) return;
+
+    await FlutterPhoneDirectCaller.callNumber(phone);
+  }
+
+  Future<void> sendEmergencyEmail(
+    String recipientEmail,
+    String userName,
+    String userPhone,
+    String location,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse("https://api.emailjs.com/api/v1.0/email/send"),
+        headers: {
+          "origin": "http://localhost",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "service_id": "service_w1qsadz",
+          "template_id": "template_zoqvluj",
+          "user_id": "MDc5uTaB1QnGevaid",
+          "template_params": {
+            "user_name": userName,
+            "user_phone": userPhone,
+            "location": location,
+            "time": DateTime.now().toString(),
+            "to_email": recipientEmail,
+          }
+        }),
+      );
+
+      print("EMAIL STATUS: ${response.statusCode}");
+      print("EMAIL BODY: ${response.body}");
+
+      if (response.statusCode == 200) {
+        Fluttertoast.showToast(
+          msg: "Emergency Email Sent Successfully",
+        );
+      }
+    } catch (e) {
+      print("EMAIL FAILED: $e");
+    }
+  }
+
+  Future<void> sendEmergencyAlert() async {
+    print("EMAIL STEP 1");
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    print("EMAIL STEP 2");
+
+    DocumentSnapshot doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user!.uid)
+        .get();
+
+    final data = doc.data() as Map<String, dynamic>?;
+    if (data == null) return;
+
+    List<dynamic> contacts = data['emergencyContacts'] ?? [];
+
+    print("EMAIL STEP 3");
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    print("PERMISSION = $permission");
+
+    Position position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+
+    print("EMAIL STEP 4");
+
+    String locationLink =
+        "http://maps.google.com/?q=${position.latitude},${position.longitude}";
+
+    String userName = data['fullName'] ?? "Unknown";
+    String userPhone = (data['phone'] ?? "Unknown").toString();
+    print("FIRESTORE NAME: $userName");
+    print("FIRESTORE PHONE: $userPhone");
+
+    for (var contactElement in contacts) {
+      if (contactElement != null) {
+        Map<String, dynamic> contact =
+            Map<String, dynamic>.from(contactElement);
+
+        String email = contact['email']?.toString() ?? "";
+        if (email.isNotEmpty) {
+          await sendEmergencyEmail(
+            email,
+            userName,
+            userPhone,
+            locationLink,
+          );
+        }
+      }
+    }
+
+    Fluttertoast.showToast(msg: "Emergency Email Sent");
   }
 
   // Secure Material PIN prompt dialog box
@@ -141,12 +279,10 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
     pinTimeout = Timer(
       const Duration(seconds: 30),
       () {
+        print("PIN TIMEOUT REACHED");
+
         if (Navigator.canPop(context)) {
           Navigator.pop(context);
-
-          Fluttertoast.showToast(
-            msg: "No PIN entered. Emergency mode activated.",
-          );
 
           _triggerAutomatedEmergencyAlert();
         }
@@ -204,14 +340,19 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
                 backgroundColor: const Color(0xffE91E63),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
-              onPressed: () {
+              onPressed: () async {
                 if (pinController.text == _correctPIN) {
                   pinTimeout?.cancel();
                   Navigator.pop(context);
                   _stopCountdown();
                   Fluttertoast.showToast(msg: "Journey ended safely.");
                 } else {
-                  Fluttertoast.showToast(msg: "Incorrect PIN. Try again.");
+                  print("WRONG PIN ENTERED");
+
+                  pinTimeout?.cancel();
+                  Navigator.pop(context);
+
+                  await _triggerAutomatedEmergencyAlert();
                 }
               },
               child: Text("Verify", style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -251,7 +392,6 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
       ),
       body: Column(
         children: [
-          // Upper branding card matching your dashboard row profile headers
           Container(
             margin: const EdgeInsets.all(15),
             padding: const EdgeInsets.all(15),
@@ -303,7 +443,6 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
             ),
           ),
 
-          // Central Countdown Progress Hub Area
           Expanded(
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 15),
@@ -369,13 +508,13 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
                   ),
                   const SizedBox(height: 32),
 
-                  // Incremental Time Padding Selector Row Pad
                   AnimatedOpacity(
                     duration: const Duration(milliseconds: 200),
                     opacity: _isTimerActive ? 0.3 : 1.0,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
+                        _buildTimePad("+1m", () => _addMinutes(1), cardBackground),
                         _buildTimePad("+5m", () => _addMinutes(5), cardBackground),
                         _buildTimePad("+10m", () => _addMinutes(10), cardBackground),
                         _buildTimePad("+15m", () => _addMinutes(15), cardBackground),
@@ -390,7 +529,6 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
 
           const SizedBox(height: 15),
 
-          // Core System Action Execution Toggle Button
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15),
             child: SizedBox(
@@ -424,7 +562,6 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
         ],
       ),
 
-      // Bottom Navigation Core with intact routing index structures
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: const Color(0xFF161B33),
         type: BottomNavigationBarType.fixed,

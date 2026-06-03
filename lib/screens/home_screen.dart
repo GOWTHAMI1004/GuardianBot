@@ -169,10 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
       
       await flutterTts.speak(
         "Hello $name. "
-        "I am Guardian Bot. "
-        "Your safety monitoring is active. "
-        "If you are in danger, say help me, save me, emergency, or I am in danger. "
-        "I will immediately alert your trusted contacts."
+        "I am Your Guardian Bot."
       );
     } catch (e) {
       debugPrint("Error loading name or initializing TTS: $e");
