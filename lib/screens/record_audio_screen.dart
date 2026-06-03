@@ -1,9 +1,15 @@
 import 'dart:io'; 
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RecordAudioScreen extends StatefulWidget {
   const RecordAudioScreen({super.key});
@@ -22,6 +28,161 @@ class _RecordAudioScreenState extends State<RecordAudioScreen> {
   void dispose() {
     audioRecorder.dispose();
     super.dispose();
+  }
+
+  // Explicitly triggers automated calling logic matching your system structure
+  Future<void> autoCallTrustedContact() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    DocumentSnapshot doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    final data = doc.data() as Map<String, dynamic>?;
+    if (data == null) return;
+
+    List<dynamic> contacts = data['emergencyContacts'] ?? [];
+    if (contacts.isEmpty) return;
+
+    Map<String, dynamic> firstContact =
+        Map<String, dynamic>.from(contacts.first);
+
+    String phone = firstContact["phone"].toString();
+    if (phone.isEmpty) return;
+
+    await FlutterPhoneDirectCaller.callNumber(phone);
+  }
+
+  // Fast2SMS API Gateway Integration
+  Future<void> sendSMS(String phone, String message) async {
+    const String apiKey = "j2ZnO0eWSClGYc8T8xkbRArpy61KZDSCIRq4kXGYRGJOoEfbqD7mzpbOuUGR";
+
+    try {
+      print("SENDING SMS TO: $phone");
+      final response = await http.post(
+        Uri.parse("https://www.fast2sms.com/dev/bulkV2"),
+        headers: {
+          "authorization": apiKey,
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "route": "q",
+          "message": message,
+          "language": "english",
+          "numbers": phone,
+        }),
+      );
+
+      print("FAST2SMS STATUS: ${response.statusCode}");
+      print("FAST2SMS BODY: ${response.body}");
+    } catch (e) {
+      print("FAST2SMS HTTP ERROR: $e");
+      Fluttertoast.showToast(msg: "Failed to send SMS via API");
+    }
+  }
+
+  // EmailJS REST API Integration Client
+  Future<void> sendEmergencyEmail(
+    String recipientEmail,
+    String userName,
+    String userPhone,
+    String location,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse("https://api.emailjs.com/api/v1.0/email/send"),
+        headers: {
+          "origin": "http://localhost",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "service_id": "service_w1qsadz",
+          "template_id": "template_zoqvluj",
+          "user_id": "MDc5uTaB1QnGevaid",
+          "template_params": {
+            "user_name": userName,
+            "user_phone": userPhone,
+            "location": location,
+            "time": DateTime.now().toString(),
+            "to_email": recipientEmail,
+          }
+        }),
+      );
+
+      print("EMAIL STATUS: ${response.statusCode}");
+      print("EMAIL BODY: ${response.body}");
+
+      if (response.statusCode == 200) {
+        Fluttertoast.showToast(
+          msg: "Emergency Email Sent Successfully",
+        );
+      }
+    } catch (e) {
+      print("EMAIL FAILED: $e");
+    }
+  }
+
+  // Unified Emergency Notification Loop
+  Future<void> sendEmergencyAlert() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    DocumentSnapshot doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    final data = doc.data() as Map<String, dynamic>?;
+    if (data == null) return;
+
+    List<dynamic> contacts = data['emergencyContacts'] ?? [];
+
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return;
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    Position position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+
+    String locationLink =
+        "http://maps.google.com/?q=${position.latitude},${position.longitude}";
+
+    String userName = data['fullName'] ?? "Unknown";
+    String userPhone = (data['phone'] ?? "Unknown").toString();
+    print("FIRESTORE NAME: $userName");
+    print("FIRESTORE PHONE: $userPhone");
+
+    String message = "🚨 EMERGENCY ALERT 🚨\n\nManual Audio Evidence recording saved by $userName. User may be in danger.\n\nLive Location:\n$locationLink";
+
+    for (var contactElement in contacts) {
+      if (contactElement != null) {
+        Map<String, dynamic> contact = Map<String, dynamic>.from(contactElement);
+        String phone = contact['phone']?.toString() ?? "";
+        
+        if (phone.isNotEmpty) {
+          await sendSMS(phone, message);
+        }
+        
+        String email = contact['email']?.toString() ?? "";
+        if (email.isNotEmpty) {
+          await sendEmergencyEmail(
+            email,
+            userName,
+            userPhone,
+            locationLink,
+          );
+        }
+      }
+    }
+
+    Fluttertoast.showToast(msg: "Emergency Alerts Broadcasted");
   }
 
   // START RECORDING FUNCTION
@@ -55,7 +216,7 @@ class _RecordAudioScreenState extends State<RecordAudioScreen> {
       setState(() {
         isRecording = false;
         audioPath = path ?? "";
-        status = "Audio Saved Successfully";
+        status = "🚨 Emergency System Activated!";
       });
 
       if (path != null) {
@@ -76,6 +237,10 @@ class _RecordAudioScreenState extends State<RecordAudioScreen> {
         }
 
         print("Saved Recording: $path");
+
+        // Fire off background alert execution & automated calling pipeline instantly
+        await sendEmergencyAlert();
+        await autoCallTrustedContact();
       }
     } catch (e) {
       print("Error stopping record: $e");
@@ -103,7 +268,6 @@ class _RecordAudioScreenState extends State<RecordAudioScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // Clean Integrated Navigation Top Bar
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: Row(
@@ -135,7 +299,6 @@ class _RecordAudioScreenState extends State<RecordAudioScreen> {
                     children: [
                       const Spacer(),
 
-                      // Animated Pulse Recording Trigger Ring
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
                         width: isRecording ? 190 : 160,
@@ -155,6 +318,7 @@ class _RecordAudioScreenState extends State<RecordAudioScreen> {
                                 color: accentPink.withOpacity(0.4),
                                 blurRadius: 30,
                                 spreadRadius: 4,
+                                offset: Offset.zero,
                               ),
                           ],
                         ),
@@ -178,21 +342,19 @@ class _RecordAudioScreenState extends State<RecordAudioScreen> {
 
                       const SizedBox(height: 40),
 
-                      // Execution Progress State Text
                       Text(
                         status,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
-                          color: isRecording ? accentPink : Colors.white,
+                          color: status.contains("🚨") ? accentPink : Colors.white,
                           letterSpacing: 0.5,
                         ),
                       ),
 
                       const SizedBox(height: 28),
 
-                      // Saved Directory Location Card Panel
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -213,7 +375,7 @@ class _RecordAudioScreenState extends State<RecordAudioScreen> {
                             fontSize: 14,
                             color: audioPath.isEmpty
                                 ? Colors.white.withOpacity(0.4)
-                                : const Color(0xFF4DEEEA), // High tech neon cyan when file exists
+                                : const Color(0xFF4DEEEA),
                             height: 1.4,
                           ),
                         ),

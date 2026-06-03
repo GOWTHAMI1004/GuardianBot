@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
+import 'emergency_contacts_setup_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 // Preserving intact navigation schemas - updated broken import reference
@@ -243,7 +244,7 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const EmergencyContactsSetupScreen()),
+                      MaterialPageRoute(builder: (_) => EmergencyContactsSetupScreen()),
                     );
                   },
                   child: const Text("Track", style: TextStyle(color: Colors.white)),

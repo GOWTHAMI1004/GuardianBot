@@ -50,7 +50,6 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
     final data = doc.data() as Map<String, dynamic>?;
     if (data == null) return;
 
-    // --- EXACT FIX BLOCK APPLIED HERE ---
     List<dynamic> contacts = data['emergencyContacts'] ?? [];
 
     if (contacts.isEmpty) return;
@@ -63,35 +62,6 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
     if (phone.isEmpty) return;
 
     await FlutterPhoneDirectCaller.callNumber(phone);
-    // -------------------------------------
-  }
-
-  // Fast2SMS Send Function
-  Future<void> sendSMS(String phone, String message) async {
-    const String apiKey = "j2ZnO0eWSClGYc8T8xkbRArpy61KZDSCIRq4kXGYRGJOoEfbqD7mzpbOuUGR";
-
-    try {
-      print("SENDING SMS TO: $phone");
-      final response = await http.post(
-        Uri.parse("https://www.fast2sms.com/dev/bulkV2"),
-        headers: {
-          "authorization": apiKey,
-          "Content-Type": "application/json",
-        },
-        body: jsonEncode({
-          "route": "q",
-          "message": message,
-          "language": "english",
-          "numbers": phone,
-        }),
-      );
-
-      print("FAST2SMS STATUS: ${response.statusCode}");
-      print("FAST2SMS BODY: ${response.body}");
-    } catch (e) {
-      print("FAST2SMS HTTP ERROR: $e");
-      Fluttertoast.showToast(msg: "Failed to send SMS via API");
-    }
   }
 
   // Clean EmailJS Send via Direct REST API
@@ -162,18 +132,12 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
     print("FIRESTORE NAME: $userName");
     print("FIRESTORE PHONE: $userPhone");
 
-    String message = "EMERGENCY! $userName needs help. Location: $locationLink";
-
     // Replicated matching strict map conversion inside the loop context
     for (var contactElement in contacts) {
       if (contactElement != null) {
-        Map<String, dynamic> contact = Map<String, dynamic>.from(contactElement);
-        String phone = contact['phone']?.toString() ?? "";
-        
-        if (phone.isNotEmpty) {
-          await sendSMS(phone, message);
-        }
-        
+        Map<String, dynamic> contact =
+            Map<String, dynamic>.from(contactElement);
+
         String email = contact['email']?.toString() ?? "";
         if (email.isNotEmpty) {
           await sendEmergencyEmail(
@@ -186,7 +150,7 @@ class _VoiceDetectionScreenState extends State<VoiceDetectionScreen> {
       }
     }
 
-    Fluttertoast.showToast(msg: "Emergency SMS and Email Sent");
+    Fluttertoast.showToast(msg: "Emergency Email Sent");
   }
 
   // START EMERGENCY AUDIO RECORDING

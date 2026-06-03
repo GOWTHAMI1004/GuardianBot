@@ -1,13 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 import 'package:noise_meter/noise_meter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:record/record.dart';
+import 'package:path_provider/path_provider.dart';
 
 class SoundDetectionScreen extends StatefulWidget {
   const SoundDetectionScreen({super.key});
@@ -19,11 +22,14 @@ class SoundDetectionScreen extends StatefulWidget {
 class _SoundDetectionScreenState extends State<SoundDetectionScreen> {
   NoiseMeter? noiseMeter;
   StreamSubscription<NoiseReading>? noiseSubscription;
+  final AudioRecorder emergencyRecorder = AudioRecorder();
 
   bool isListening = false;
   double decibel = 0;
   String status = "Waiting for loud sound...";
   bool alertSent = false;
+  bool emergencyRecording = false;
+  String emergencyAudioPath = "";
 
   @override
   void initState() {
@@ -31,26 +37,224 @@ class _SoundDetectionScreenState extends State<SoundDetectionScreen> {
     startDetection();
   }
 
+  // Explicitly triggers automated calling logic matching your system structure
+  Future<void> autoCallTrustedContact() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    DocumentSnapshot doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    final data = doc.data() as Map<String, dynamic>?;
+    if (data == null) return;
+
+    List<dynamic> contacts = data['emergencyContacts'] ?? [];
+    if (contacts.isEmpty) return;
+
+    Map<String, dynamic> firstContact =
+        Map<String, dynamic>.from(contacts.first);
+
+    String phone = firstContact["phone"].toString();
+    if (phone.isEmpty) return;
+
+    await FlutterPhoneDirectCaller.callNumber(phone);
+  }
+
+  // Fast2SMS API Gateway Integration
+  Future<void> sendSMS(String phone, String message) async {
+    const String apiKey = "j2ZnO0eWSClGYc8T8xkbRArpy61KZDSCIRq4kXGYRGJOoEfbqD7mzpbOuUGR";
+
+    try {
+      print("SENDING SMS TO: $phone");
+      final response = await http.post(
+        Uri.parse("https://www.fast2sms.com/dev/bulkV2"),
+        headers: {
+          "authorization": apiKey,
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "route": "q",
+          "message": message,
+          "language": "english",
+          "numbers": phone,
+        }),
+      );
+
+      print("FAST2SMS STATUS: ${response.statusCode}");
+      print("FAST2SMS BODY: ${response.body}");
+    } catch (e) {
+      print("FAST2SMS HTTP ERROR: $e");
+      Fluttertoast.showToast(msg: "Failed to send SMS via API");
+    }
+  }
+
+  // EmailJS REST API Integration Client
+  Future<void> sendEmergencyEmail(
+    String recipientEmail,
+    String userName,
+    String userPhone,
+    String location,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse("https://api.emailjs.com/api/v1.0/email/send"),
+        headers: {
+          "origin": "http://localhost",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "service_id": "service_w1qsadz",
+          "template_id": "template_zoqvluj",
+          "user_id": "MDc5uTaB1QnGevaid",
+          "template_params": {
+            "user_name": userName,
+            "user_phone": userPhone,
+            "location": location,
+            "time": DateTime.now().toString(),
+            "to_email": recipientEmail,
+          }
+        }),
+      );
+
+      print("EMAIL STATUS: ${response.statusCode}");
+      print("EMAIL BODY: ${response.body}");
+
+      if (response.statusCode == 200) {
+        Fluttertoast.showToast(
+          msg: "Emergency Email Sent Successfully",
+        );
+      }
+    } catch (e) {
+      print("EMAIL FAILED: $e");
+    }
+  }
+
+  // Unified Emergency Notification Loop
+  Future<void> sendEmergencyAlert() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    DocumentSnapshot doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    final data = doc.data() as Map<String, dynamic>?;
+    if (data == null) return;
+
+    List<dynamic> contacts = data['emergencyContacts'] ?? [];
+
+    Position position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+
+    String locationLink =
+        "http://maps.google.com/?q=${position.latitude},${position.longitude}";
+
+    String userName = data['fullName'] ?? "Unknown";
+    String userPhone = (data['phone'] ?? "Unknown").toString();
+    print("FIRESTORE NAME: $userName");
+    print("FIRESTORE PHONE: $userPhone");
+
+    String message = "EMERGENCY! Loud sound detected near $userName. Location: $locationLink";
+
+    for (var contactElement in contacts) {
+      if (contactElement != null) {
+        Map<String, dynamic> contact = Map<String, dynamic>.from(contactElement);
+        String phone = contact['phone']?.toString() ?? "";
+        
+        if (phone.isNotEmpty) {
+          await sendSMS(phone, message);
+        }
+        
+        String email = contact['email']?.toString() ?? "";
+        if (email.isNotEmpty) {
+          await sendEmergencyEmail(
+            email,
+            userName,
+            userPhone,
+            locationLink,
+          );
+        }
+      }
+    }
+
+    Fluttertoast.showToast(msg: "Emergency Alerts Broadcasted");
+  }
+
+  // Active Microscopic Evidence Track Start
+  Future<void> startEmergencyRecording() async {
+    if (await emergencyRecorder.hasPermission()) {
+      final dir = await getApplicationDocumentsDirectory();
+
+      emergencyAudioPath =
+          "${dir.path}/sound_emergency_${DateTime.now().millisecondsSinceEpoch}.m4a";
+
+      await emergencyRecorder.start(
+        const RecordConfig(),
+        path: emergencyAudioPath,
+      );
+
+      setState(() {
+        emergencyRecording = true;
+        status = "🎙 Emergency Recording Started";
+      });
+
+      print("Sound Emergency Recording Started");
+    }
+  }
+
+  // Active Microscopic Evidence Track Stop
+  Future<void> stopEmergencyRecording() async {
+    try {
+      final path = await emergencyRecorder.stop();
+
+      setState(() {
+        emergencyRecording = false;
+        status = "✅ Emergency Recording Saved";
+      });
+
+      print("Sound Emergency Recording Saved: $path");
+
+      Fluttertoast.showToast(
+        msg: "Emergency Evidence Saved",
+      );
+    } catch (e) {
+      print(e);
+    }
+  }
+
   void startDetection() async {
     noiseMeter = NoiseMeter();
     noiseSubscription = noiseMeter!.noise.listen(
-          (NoiseReading noiseReading) {
+      (NoiseReading noiseReading) async {
         setState(() {
           decibel = noiseReading.meanDecibel;
         });
 
-        if (decibel > 85 && alertSent == false) {
+        if (decibel > 85 && !alertSent) {
           alertSent = true;
 
           setState(() {
             status = "🚨 Loud Scream Detected!";
           });
 
-          autoCallTrustedContact();
-          sendEmergencyAlert();
+          await startEmergencyRecording();
+          await sendEmergencyAlert();
 
           Fluttertoast.showToast(
             msg: "Emergency Alert Activated",
+          );
+
+          Future.delayed(
+            const Duration(seconds: 30),
+            () async {
+              await stopEmergencyRecording();
+              await autoCallTrustedContact();
+              alertSent = false;
+            },
           );
         }
       },
@@ -71,62 +275,10 @@ class _SoundDetectionScreenState extends State<SoundDetectionScreen> {
     });
   }
 
-  Future<void> autoCallTrustedContact() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    DocumentSnapshot doc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .get();
-
-    final data = doc.data() as Map<String, dynamic>?;
-    if (data == null) return;
-
-    List<dynamic> contacts = data['emergencyContacts'] ?? [];
-    if (contacts.isEmpty) return;
-
-    String phone = contacts[0]['phone'] ?? "";
-    if (phone.isEmpty) return;
-
-    await FlutterPhoneDirectCaller.callNumber(phone);
-  }
-
-  Future<void> sendEmergencyAlert() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) return;
-
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-
-    Position position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-    );
-
-    String locationLink = "https://maps.google.com/?q="
-        "${position.latitude},${position.longitude}";
-
-    String message = "🚨 EMERGENCY ALERT 🚨\n\n"
-        "Loud scream detected.\n"
-        "User may be in danger.\n\n"
-        "Live Location:\n"
-        "$locationLink";
-
-    final Uri whatsapp = Uri.parse(
-      "https://wa.me/?text=${Uri.encodeComponent(message)}",
-    );
-
-    await launchUrl(
-      whatsapp,
-      mode: LaunchMode.externalApplication,
-    );
-  }
-
   @override
   void dispose() {
     noiseSubscription?.cancel();
+    emergencyRecorder.dispose();
     super.dispose();
   }
 
@@ -151,7 +303,6 @@ class _SoundDetectionScreenState extends State<SoundDetectionScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // Clean Navigation Action Top Header
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: Row(
@@ -183,7 +334,6 @@ class _SoundDetectionScreenState extends State<SoundDetectionScreen> {
                     children: [
                       const Spacer(),
 
-                      // Animated Equalizer Audio Visual Ring
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 400),
                         width: isListening ? 190 : 160,
@@ -203,6 +353,7 @@ class _SoundDetectionScreenState extends State<SoundDetectionScreen> {
                                 color: accentPink.withOpacity(0.4),
                                 blurRadius: 30,
                                 spreadRadius: 4,
+                                offset: Offset.zero,
                               ),
                           ],
                         ),
@@ -217,7 +368,6 @@ class _SoundDetectionScreenState extends State<SoundDetectionScreen> {
 
                       const SizedBox(height: 36),
 
-                      // Active Label Text Header
                       Text(
                         isListening ? "Listening for danger sounds..." : "Detection Stopped",
                         style: GoogleFonts.poppins(
@@ -230,7 +380,6 @@ class _SoundDetectionScreenState extends State<SoundDetectionScreen> {
 
                       const SizedBox(height: 32),
 
-                      // Telemetry Decibel Tracking Board Panel
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -268,12 +417,11 @@ class _SoundDetectionScreenState extends State<SoundDetectionScreen> {
 
                       const SizedBox(height: 32),
 
-                      // Status Tracking Response Element
                       Text(
                         status,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
-                          color: status.contains("🚨") ? accentPink : const Color(0xFF4DEEEA),
+                          color: status.contains("🚨") || status.contains("🎙") ? accentPink : const Color(0xFF4DEEEA),
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.2,
@@ -282,7 +430,6 @@ class _SoundDetectionScreenState extends State<SoundDetectionScreen> {
 
                       const Spacer(),
 
-                      // Dynamic Execution Core Switch Toggle Card
                       SizedBox(
                         width: double.infinity,
                         height: 56,

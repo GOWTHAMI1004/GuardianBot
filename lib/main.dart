@@ -36,7 +36,7 @@ class GuardianBotApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginScreen(),
         '/profile-setup': (context) => const ProfileSetupScreen(),
-        '/emergency-contacts': (context) => const EmergencyContactsSetupScreen(),
+        '/emergency-contacts': (context) => EmergencyContactsSetupScreen(),
         // FIXED: 'const' removed from HomeScreen() so it compiles perfectly
         '/home': (context) => HomeScreen(),
       },

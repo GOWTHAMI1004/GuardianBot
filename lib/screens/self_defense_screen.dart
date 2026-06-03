@@ -3,8 +3,22 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
-class SelfDefenseScreen extends StatelessWidget {
+// Import your actual screen destinations here
+// import 'home_screen.dart';
+// import 'live_location_screen.dart';
+// import 'contacts_screen.dart';
+// import 'profile_screen.dart';
+
+class SelfDefenseScreen extends StatefulWidget {
   const SelfDefenseScreen({super.key});
+
+  @override
+  State<SelfDefenseScreen> createState() => _SelfDefenseScreenState();
+}
+
+class _SelfDefenseScreenState extends State<SelfDefenseScreen> {
+  // Keeps track of the currently selected bottom navigation index
+  int _currentIndex = 0;
 
   // Dynamic launcher function executing safe URL parsing strings
   Future<void> _playVideoInstruction(BuildContext context, String urlString) async {
@@ -27,6 +41,32 @@ class SelfDefenseScreen extends StatelessWidget {
     }
   }
 
+  // Handle bottom navigation item selection switching logic
+  void _onTabTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+
+    // Implement navigation or tab index updates here:
+    switch (index) {
+      case 0:
+        // Already on home/self-defense component workspace context
+        break;
+      case 1:
+        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LiveLocationScreen()));
+        Fluttertoast.showToast(msg: "Navigating to Live Location...");
+        break;
+      case 2:
+        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ContactsScreen()));
+        Fluttertoast.showToast(msg: "Navigating to Contacts...");
+        break;
+      case 3:
+        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ProfileScreen()));
+        Fluttertoast.showToast(msg: "Navigating to Profile...");
+        break;
+    }
+  }
+
   // Modern interactive card responsive to click states
   Widget techniqueCard({
     required BuildContext context,
@@ -39,7 +79,6 @@ class SelfDefenseScreen extends StatelessWidget {
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      // Clip contents so the splash ripple remains bounded perfectly inside the border radius
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: Material(
@@ -59,7 +98,6 @@ class SelfDefenseScreen extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  // Visual thumbnail container
                   ClipRRect(
                     borderRadius: BorderRadius.circular(14),
                     child: Container(
@@ -77,7 +115,6 @@ class SelfDefenseScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 16),
 
-                  // Descriptive Text Content Block
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,7 +142,6 @@ class SelfDefenseScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
 
-                  // Play circle icon hint indicating external links are executable
                   Icon(
                     Icons.play_circle_outline_rounded,
                     color: accentColor,
@@ -168,7 +204,6 @@ class SelfDefenseScreen extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
-              // Integrated Navigation Top Title Block
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: Row(
@@ -192,7 +227,6 @@ class SelfDefenseScreen extends StatelessWidget {
                 ),
               ),
 
-              // Scrollable Main List Window Workspace
               Expanded(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
@@ -220,7 +254,6 @@ class SelfDefenseScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 28),
 
-                      // Interactive Move Lists (Add your actual video links into videoUrl)
                       techniqueCard(
                         context: context,
                         image: "assets/images/wrist_grab.png",
@@ -253,7 +286,7 @@ class SelfDefenseScreen extends StatelessWidget {
                         image: "assets/images/punch_nose.png",
                         title: "Punch to Nose",
                         subtitle: "Use your fist effectively to defend yourself.",
-                        videoUrl: "https://www.youtube.com/watch?v=9Rfg57ZPffg", // Empty strings fallback smoothly to toast popups
+                        videoUrl: "https://www.youtube.com/watch?v=9Rfg57ZPffg",
                         surfaceColor: surfaceContainer,
                         accentColor: accentPink,
                       ),
@@ -278,7 +311,6 @@ class SelfDefenseScreen extends StatelessWidget {
 
                       const SizedBox(height: 20),
 
-                      // Cyber Glow Infobox Panel for Tips
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
@@ -336,8 +368,6 @@ class SelfDefenseScreen extends StatelessWidget {
           ),
         ),
       ),
-
-      // Sync bottom navigation segment
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           border: Border(
@@ -345,7 +375,8 @@ class SelfDefenseScreen extends StatelessWidget {
           ),
         ),
         child: BottomNavigationBar(
-          currentIndex: 0,
+          currentIndex: _currentIndex,
+          onTap: _onTabTapped,
           type: BottomNavigationBarType.fixed,
           backgroundColor: const Color(0xFF090D22),
           selectedItemColor: accentPink,

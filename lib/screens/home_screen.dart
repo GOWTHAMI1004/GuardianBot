@@ -25,6 +25,70 @@ class _HomeScreenState extends State<HomeScreen> {
   String _currentUserName = "User";
   bool _isLoadingName = true;
 
+  Future<bool> checkSecuritySetup() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) return false;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    if (!doc.exists) return false;
+
+    final data = doc.data();
+
+    List<dynamic> contacts =
+        data?['emergencyContacts'] ?? [];
+
+    String safetyPin =
+        data?['safetyPin'] ?? "";
+
+    if (contacts.isEmpty || safetyPin.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            backgroundColor: const Color(0xFF1B1E4B),
+
+            title: const Text(
+              "Complete Security Setup",
+              style: TextStyle(
+                color: Colors.white,
+              ),
+            ),
+
+            content: const Text(
+              "Please complete:\n\n1. Emergency Contacts\n2. Safety PIN\n\nbefore using GuardianBot features.",
+              style: TextStyle(
+                color: Colors.white70,
+              ),
+            ),
+
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text(
+                  "OK",
+                  style: TextStyle(
+                    color: Colors.pink,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+
+      return false;
+    }
+
+    return true;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -353,11 +417,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icons.mic,
                   title: "Voice Detection",
                   subtitle: "Detect distress voices automatically",
-                  onTap: () {
+                  onTap: () async {
+                    bool allowed = await checkSecuritySetup();
+                    if (!allowed) return;
+
+                    if (!context.mounted) return;
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const VoiceDetectionScreen(),
+                       builder: (_) => VoiceDetectionScreen(),
                       ),
                     );
                   },
@@ -368,7 +436,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icons.graphic_eq,
                   title: "Sound Detection",
                   subtitle: "Detect screams or loud sounds",
-                  onTap: () {
+                  onTap: () async {
+                    bool allowed = await checkSecuritySetup();
+                    if (!allowed) return;
+
+                    if (!context.mounted) return;
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -383,7 +455,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icons.mic_none,
                   title: "Record Audio",
                   subtitle: "Record evidence securely",
-                  onTap: () {
+                  onTap: () async {
+                    bool allowed = await checkSecuritySetup();
+                    if (!allowed) return;
+
+                    if (!context.mounted) return;
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -398,7 +474,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icons.security,
                   title: "Self Defense",
                   subtitle: "Learn techniques & stay safe",
-                  onTap: () {
+                  onTap: () async {
+                    bool allowed = await checkSecuritySetup();
+                    if (!allowed) return;
+
+                    if (!context.mounted) return;
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -543,7 +623,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: Colors.white70,
                             fontSize: 14,
                             height: 1.4,
-          ) ,
+                          ),
                         ),
                       ],
                     ),
@@ -562,8 +642,12 @@ class _HomeScreenState extends State<HomeScreen> {
         currentIndex: 0,
         selectedItemColor: Colors.pink,
         unselectedItemColor: Colors.grey,
-        onTap: (index) {
+        onTap: (index) async {
           if (index == 1) {
+            bool allowed = await checkSecuritySetup();
+            if (!allowed) return;
+
+            if (!context.mounted) return;
             Navigator.push(
               context,
               MaterialPageRoute(
