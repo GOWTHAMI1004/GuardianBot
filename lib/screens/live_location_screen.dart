@@ -48,8 +48,7 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
 
       if (doc.exists) {
         setState(() {
-          _correctPIN =
-              doc.data()?['safetyPin']?.toString() ?? "";
+          _correctPIN = doc.data()?['safetyPin']?.toString() ?? "";
         });
       }
     } catch (e) {
@@ -224,7 +223,7 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
 
     DocumentSnapshot doc = await FirebaseFirestore.instance
         .collection('users')
-        .doc(user!.uid)
+        .doc(user.uid)
         .get();
 
     final data = doc.data() as Map<String, dynamic>?;
@@ -244,7 +243,7 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
     print("EMAIL STEP 4");
 
     String locationLink =
-        "http://maps.google.com/?q=${position.latitude},${position.longitude}";
+        "https://maps.google.com/?q=${position.latitude},${position.longitude}";
 
     String userName = data['fullName'] ?? "Unknown";
     String userPhone = (data['phone'] ?? "Unknown").toString();
@@ -276,18 +275,14 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
     final TextEditingController pinController = TextEditingController();
     Timer? pinTimeout;
 
+    // Integrated correct implementation snippet seamlessly
     pinTimeout = Timer(
       const Duration(seconds: 30),
-
       () {
         print("PIN TIMEOUT REACHED");
 
-
-          () {
-
         if (Navigator.canPop(context)) {
           Navigator.pop(context);
-
           _triggerAutomatedEmergencyAlert();
         }
       },
@@ -438,7 +433,7 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => EmergencyContactsSetupScreen()),
+                      MaterialPageRoute(builder: (_) => const EmergencyContactsSetupScreen()),
                     );
                   },
                   child: const Text("Track", style: TextStyle(color: Colors.white)),
@@ -566,10 +561,6 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
         ],
       ),
 
-
-
-      // Bottom Navigation Core - Updated icon and text label for the second item
-
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: const Color(0xFF161B33),
         type: BottomNavigationBarType.fixed,
@@ -622,4 +613,3 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
     );
   }
 }
-

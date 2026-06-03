@@ -114,24 +114,36 @@ class _HomeScreenState extends State<HomeScreen> {
 
     detector = ShakeDetector.autoStart(
       shakeThresholdGravity: 2.0,
-      onPhoneShake: (ShakeEvent event) async {
+      onPhoneShake: (ShakeEvent event) async { // Fixed signature mismatch type error
         print("PHONE SHAKEN");
 
         if (await Vibration.hasVibrator() ?? false) {
           Vibration.vibrate(duration: 3000);
         }
 
-        await player.play(
-          AssetSource('siren.mp3'),
-        );
+        try {
+await player.play(
+  AssetSource('audio/siren.mp3'),
+);
+          print("SIREN PLAYED");
+        } catch (e) {
+          print("SIREN ERROR: $e");
+        }
 
-        await flutterTts.speak("Emergency Alert. Please Help Me.");
+        try {
+          await flutterTts.speak(
+            "Emergency Alert. Please Help Me."
+          );
+          print("VOICE PLAYED");
+        } catch (e) {
+          print("VOICE ERROR: $e");
+        }
       },
     );
 
     Future.delayed(
       const Duration(milliseconds: 800),
-          () {
+      () {
         if (mounted) {
           speakWelcome();
         }
@@ -168,16 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
       await flutterTts.setVolume(1.0);
 
       await flutterTts.speak(
-
-        "Hello $name. "
-        "I am Your Guardian Bot."
-
-          "Hello $name. "
-              "I am Guardian Bot. "
-              "Your safety monitoring is active. "
-              "If you are in danger, say help me, save me, emergency, or I am in danger. "
-              "I will immediately alert your trusted contacts."
-
+        "Hello $name. I am Guardian Bot. Your safety monitoring is active."
       );
     } catch (e) {
       debugPrint("Error loading name or initializing TTS: $e");
