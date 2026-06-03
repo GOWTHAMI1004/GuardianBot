@@ -278,8 +278,12 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
 
     pinTimeout = Timer(
       const Duration(seconds: 30),
+
       () {
         print("PIN TIMEOUT REACHED");
+
+
+          () {
 
         if (Navigator.canPop(context)) {
           Navigator.pop(context);
@@ -562,6 +566,10 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
         ],
       ),
 
+
+
+      // Bottom Navigation Core - Updated icon and text label for the second item
+
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: const Color(0xFF161B33),
         type: BottomNavigationBarType.fixed,
@@ -587,7 +595,7 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
         },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.location_on), label: "Location"),
+          BottomNavigationBarItem(icon: Icon(Icons.access_time_filled), label: "Timer"),
           BottomNavigationBarItem(icon: Icon(Icons.people), label: "Contacts"),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
         ],
@@ -614,3 +622,4 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
     );
   }
 }
+
