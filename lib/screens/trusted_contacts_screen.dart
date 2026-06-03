@@ -78,7 +78,7 @@ class TrustedContactsScreen extends StatelessWidget {
                 final String phone = phoneController.text.trim();
                 final String email = emailController.text.trim();
                 final String relation = relationController.text.trim();
-                
+
                 if (name.isEmpty || phone.isEmpty || email.isEmpty) {
                   Fluttertoast.showToast(
                     msg: "Name, Phone, and Email cannot be empty.",
@@ -166,108 +166,108 @@ class TrustedContactsScreen extends StatelessWidget {
       body: user == null
           ? const Center(child: Text("Please sign in to configure trusted profiles.", style: TextStyle(color: Colors.white)))
           : StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(user.uid)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: primaryPink));
-                }
+        stream: FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: primaryPink));
+          }
 
-                if (!snapshot.hasData || !snapshot.data!.exists) {
-                  return _buildEmptyState(context, user);
-                }
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return _buildEmptyState(context, user);
+          }
 
-                final userData = snapshot.data!.data() as Map<String, dynamic>?;
-                final List<dynamic> rawContacts = userData?['emergencyContacts'] ?? [];
+          final userData = snapshot.data!.data() as Map<String, dynamic>?;
+          final List<dynamic> rawContacts = userData?['emergencyContacts'] ?? [];
 
-                if (rawContacts.isEmpty) {
-                  return _buildEmptyState(context, user);
-                }
+          if (rawContacts.isEmpty) {
+            return _buildEmptyState(context, user);
+          }
 
-                return Column(
-                  children: [
-                    Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.only(top: 10, bottom: 20),
-                        itemCount: rawContacts.length,
-                        itemBuilder: (context, index) {
-                          final contact = rawContacts[index] as Map<String, dynamic>;
-                          final String name = contact['name'] ?? 'Named Guardian';
-                          final String phone = contact['phone'] ?? '';
-                          final String email = contact['email'] ?? 'No Email Added';
-                          final String relation = contact['relation'] ?? 'Friend';
-                          
-                          final Color assignedThemeColor = avatarColors[index % avatarColors.length];
+          return Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.only(top: 10, bottom: 20),
+                  itemCount: rawContacts.length,
+                  itemBuilder: (context, index) {
+                    final contact = rawContacts[index] as Map<String, dynamic>;
+                    final String name = contact['name'] ?? 'Named Guardian';
+                    final String phone = contact['phone'] ?? '';
+                    final String email = contact['email'] ?? 'No Email Added';
+                    final String relation = contact['relation'] ?? 'Friend';
 
-                          return buildContactCard(
-                            name: name,
-                            phone: phone,
-                            email: email,
-                            relation: relation,
-                            color: assignedThemeColor,
-                            onEdit: () => _showContactDialog(
-                              context: context,
-                              user: user,
-                              existingContact: contact,
-                              index: index,
-                              fullContactList: rawContacts,
-                            ),
-                            onDelete: () async {
-                              List<dynamic> contacts = List.from(rawContacts);
-                              contacts.removeAt(index);
+                    final Color assignedThemeColor = avatarColors[index % avatarColors.length];
 
-                              await FirebaseFirestore.instance
-                                  .collection('users')
-                                  .doc(user.uid)
-                                  .update({'emergencyContacts': contacts});
-
-                              Fluttertoast.showToast(msg: "Contact Deleted");
-                            },
-                          );
-                        },
+                    return buildContactCard(
+                      name: name,
+                      phone: phone,
+                      email: email,
+                      relation: relation,
+                      color: assignedThemeColor,
+                      onEdit: () => _showContactDialog(
+                        context: context,
+                        user: user,
+                        existingContact: contact,
+                        index: index,
+                        fullContactList: rawContacts,
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF161B33),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 10,
-                            offset: const Offset(0, -2),
-                          )
-                        ],
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(25),
-                          topRight: Radius.circular(25),
-                        ),
-                      ),
-                      child: SafeArea(
-                        child: SizedBox(
-                          width: double.infinity,
-                          height: 54,
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryPink,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            ),
-                            onPressed: () => _showContactDialog(context: context, user: user),
-                            icon: const Icon(Icons.add_moderator_outlined, color: Colors.white),
-                            label: const Text(
-                              "Add Secure Contact",
-                              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ),
-                      ),
+                      onDelete: () async {
+                        List<dynamic> contacts = List.from(rawContacts);
+                        contacts.removeAt(index);
+
+                        await FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(user.uid)
+                            .update({'emergencyContacts': contacts});
+
+                        Fluttertoast.showToast(msg: "Contact Deleted");
+                      },
+                    );
+                  },
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF161B33),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, -2),
                     )
                   ],
-                );
-              },
-            ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(25),
+                    topRight: Radius.circular(25),
+                  ),
+                ),
+                child: SafeArea(
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryPink,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      onPressed: () => _showContactDialog(context: context, user: user),
+                      icon: const Icon(Icons.add_moderator_outlined, color: Colors.white),
+                      label: const Text(
+                        "Add Secure Contact",
+                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            ],
+          );
+        },
+      ),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: const Color(0xFF161B33),
         type: BottomNavigationBarType.fixed,
@@ -276,20 +276,32 @@ class TrustedContactsScreen extends StatelessWidget {
         unselectedItemColor: Colors.grey,
         onTap: (index) {
           if (index == 0) {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+            Navigator.pop(context);
           }
           if (index == 1) {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => LiveLocationScreen()));
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LiveLocationScreen()));
           }
           if (index == 3) {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
           }
         },
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.location_on), label: "Location"),
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: "Contacts"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: "Home",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.access_time_filled),
+            label: "Timer",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people),
+            label: "Contacts",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: "Profile",
+          ),
         ],
       ),
     );

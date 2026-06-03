@@ -111,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     detector = ShakeDetector.autoStart(
       shakeThresholdGravity: 2.0,
       onPhoneShake: (ShakeEvent event) async {
@@ -131,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     Future.delayed(
       const Duration(milliseconds: 800),
-      () {
+          () {
         if (mounted) {
           speakWelcome();
         }
@@ -166,13 +166,13 @@ class _HomeScreenState extends State<HomeScreen> {
       await flutterTts.setLanguage("en-US");
       await flutterTts.setSpeechRate(0.45);
       await flutterTts.setVolume(1.0);
-      
+
       await flutterTts.speak(
-        "Hello $name. "
-        "I am Guardian Bot. "
-        "Your safety monitoring is active. "
-        "If you are in danger, say help me, save me, emergency, or I am in danger. "
-        "I will immediately alert your trusted contacts."
+          "Hello $name. "
+              "I am Guardian Bot. "
+              "Your safety monitoring is active. "
+              "If you are in danger, say help me, save me, emergency, or I am in danger. "
+              "I will immediately alert your trusted contacts."
       );
     } catch (e) {
       debugPrint("Error loading name or initializing TTS: $e");
@@ -185,7 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // FEATURE CARD (FIXED INDENTATION & STRAY PARENTHESIS ERROR)
+  // FEATURE CARD
   Widget featureCard({
     required Color color,
     required IconData icon,
@@ -674,7 +674,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => LiveLocationScreen(),
+                builder: (_) => const LiveLocationScreen(),
               ),
             );
           }
@@ -701,8 +701,8 @@ class _HomeScreenState extends State<HomeScreen> {
             label: "Home",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.location_on),
-            label: "Live Location",
+            icon: Icon(Icons.access_time_filled),
+            label: "Timer",
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.people),
